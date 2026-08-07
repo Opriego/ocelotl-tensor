@@ -1,0 +1,15 @@
+LexerTest.TokenizesTensorDeclaration 4 0.000269703
+LexerTest.TokenizesIdentifiersAndKeywords 2 0.00077651
+LexerTest.TokenizesIntegerAndFloatLiterals 2 0.00143482
+LexerTest.TokenizesPunctuation 2 0.00137532
+LexerTest.ProducesUnknownTokenForInvalidCharacter 2 0.00161408
+LexerTest.TracksSourceLocationsAcrossLines 2 0.00177223
+LexerTest.TokenizesIdentifiersWithUnderscoresAndDigits 1 0.00405153
+LexerTest.TreatsTrailingDotAfterIntegerAsSeparateUnknownToken 1 0.00385742
+LexerTest.TokenizesMultipleDotsWithoutSilentlyAcceptingInvalidFloat 1 0.00318268
+LexerTest.SkipsWhitespace 1 0.00429463
+LexerTest.ProducesEofForEmptyInput 1 0.00381186
+LexerTest.RepeatedEofIsStable 1 0.00369924
+LexerTest.DoesNotMatchKeywordPrefixes 1 0.00360195
+LexerTest.TracksByteOffsets 1 0.00257176
+---

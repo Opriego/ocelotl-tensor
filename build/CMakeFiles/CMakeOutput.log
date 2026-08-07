@@ -217,3 +217,39 @@ Parsed CXX implicit link information from above output:
   implicit fwks: []
 
 
+Determining if the include file pthread.h exists passed with the following output:
+Change Dir: /home/opriego/LinuxDev/ocelotl-tensor/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/ninja cmTC_4406f && [1/2] Building CXX object CMakeFiles/cmTC_4406f.dir/CheckIncludeFile.cxx.o
+[2/2] Linking CXX executable cmTC_4406f
+
+
+
+Performing C++ SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD succeeded with the following output:
+Change Dir: /home/opriego/LinuxDev/ocelotl-tensor/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/ninja cmTC_2892a && [1/2] Building CXX object CMakeFiles/cmTC_2892a.dir/src.cxx.o
+[2/2] Linking CXX executable cmTC_2892a
+
+
+Source file was:
+#include <pthread.h>
+
+static void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_cancel(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+

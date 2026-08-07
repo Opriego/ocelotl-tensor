@@ -1,0 +1,381 @@
+Start testing: Aug 07 00:30 CST
+----------------------------------------------------------
+1/14 Testing: LexerTest.TokenizesTensorDeclaration
+1/14 Test: LexerTest.TokenizesTensorDeclaration
+Command: "/home/opriego/LinuxDev/ocelotl-tensor/build/ocelotl_tests" "--gtest_filter=LexerTest.TokenizesTensorDeclaration" "--gtest_also_run_disabled_tests"
+Directory: /home/opriego/LinuxDev/ocelotl-tensor/build
+"LexerTest.TokenizesTensorDeclaration" start time: Aug 07 00:30 CST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+Note: Google Test filter = LexerTest.TokenizesTensorDeclaration
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from LexerTest
+[ RUN      ] LexerTest.TokenizesTensorDeclaration
+[       OK ] LexerTest.TokenizesTensorDeclaration (0 ms)
+[----------] 1 test from LexerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"LexerTest.TokenizesTensorDeclaration" end time: Aug 07 00:30 CST
+"LexerTest.TokenizesTensorDeclaration" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/14 Testing: LexerTest.TokenizesIdentifiersAndKeywords
+2/14 Test: LexerTest.TokenizesIdentifiersAndKeywords
+Command: "/home/opriego/LinuxDev/ocelotl-tensor/build/ocelotl_tests" "--gtest_filter=LexerTest.TokenizesIdentifiersAndKeywords" "--gtest_also_run_disabled_tests"
+Directory: /home/opriego/LinuxDev/ocelotl-tensor/build
+"LexerTest.TokenizesIdentifiersAndKeywords" start time: Aug 07 00:30 CST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+Note: Google Test filter = LexerTest.TokenizesIdentifiersAndKeywords
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from LexerTest
+[ RUN      ] LexerTest.TokenizesIdentifiersAndKeywords
+[       OK ] LexerTest.TokenizesIdentifiersAndKeywords (0 ms)
+[----------] 1 test from LexerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"LexerTest.TokenizesIdentifiersAndKeywords" end time: Aug 07 00:30 CST
+"LexerTest.TokenizesIdentifiersAndKeywords" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/14 Testing: LexerTest.TokenizesIntegerAndFloatLiterals
+3/14 Test: LexerTest.TokenizesIntegerAndFloatLiterals
+Command: "/home/opriego/LinuxDev/ocelotl-tensor/build/ocelotl_tests" "--gtest_filter=LexerTest.TokenizesIntegerAndFloatLiterals" "--gtest_also_run_disabled_tests"
+Directory: /home/opriego/LinuxDev/ocelotl-tensor/build
+"LexerTest.TokenizesIntegerAndFloatLiterals" start time: Aug 07 00:30 CST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+Note: Google Test filter = LexerTest.TokenizesIntegerAndFloatLiterals
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from LexerTest
+[ RUN      ] LexerTest.TokenizesIntegerAndFloatLiterals
+[       OK ] LexerTest.TokenizesIntegerAndFloatLiterals (0 ms)
+[----------] 1 test from LexerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"LexerTest.TokenizesIntegerAndFloatLiterals" end time: Aug 07 00:30 CST
+"LexerTest.TokenizesIntegerAndFloatLiterals" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/14 Testing: LexerTest.TokenizesPunctuation
+4/14 Test: LexerTest.TokenizesPunctuation
+Command: "/home/opriego/LinuxDev/ocelotl-tensor/build/ocelotl_tests" "--gtest_filter=LexerTest.TokenizesPunctuation" "--gtest_also_run_disabled_tests"
+Directory: /home/opriego/LinuxDev/ocelotl-tensor/build
+"LexerTest.TokenizesPunctuation" start time: Aug 07 00:30 CST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+Note: Google Test filter = LexerTest.TokenizesPunctuation
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from LexerTest
+[ RUN      ] LexerTest.TokenizesPunctuation
+[       OK ] LexerTest.TokenizesPunctuation (0 ms)
+[----------] 1 test from LexerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"LexerTest.TokenizesPunctuation" end time: Aug 07 00:30 CST
+"LexerTest.TokenizesPunctuation" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/14 Testing: LexerTest.ProducesUnknownTokenForInvalidCharacter
+5/14 Test: LexerTest.ProducesUnknownTokenForInvalidCharacter
+Command: "/home/opriego/LinuxDev/ocelotl-tensor/build/ocelotl_tests" "--gtest_filter=LexerTest.ProducesUnknownTokenForInvalidCharacter" "--gtest_also_run_disabled_tests"
+Directory: /home/opriego/LinuxDev/ocelotl-tensor/build
+"LexerTest.ProducesUnknownTokenForInvalidCharacter" start time: Aug 07 00:30 CST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+Note: Google Test filter = LexerTest.ProducesUnknownTokenForInvalidCharacter
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from LexerTest
+[ RUN      ] LexerTest.ProducesUnknownTokenForInvalidCharacter
+[       OK ] LexerTest.ProducesUnknownTokenForInvalidCharacter (0 ms)
+[----------] 1 test from LexerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"LexerTest.ProducesUnknownTokenForInvalidCharacter" end time: Aug 07 00:30 CST
+"LexerTest.ProducesUnknownTokenForInvalidCharacter" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/14 Testing: LexerTest.TracksSourceLocationsAcrossLines
+6/14 Test: LexerTest.TracksSourceLocationsAcrossLines
+Command: "/home/opriego/LinuxDev/ocelotl-tensor/build/ocelotl_tests" "--gtest_filter=LexerTest.TracksSourceLocationsAcrossLines" "--gtest_also_run_disabled_tests"
+Directory: /home/opriego/LinuxDev/ocelotl-tensor/build
+"LexerTest.TracksSourceLocationsAcrossLines" start time: Aug 07 00:30 CST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+Note: Google Test filter = LexerTest.TracksSourceLocationsAcrossLines
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from LexerTest
+[ RUN      ] LexerTest.TracksSourceLocationsAcrossLines
+[       OK ] LexerTest.TracksSourceLocationsAcrossLines (0 ms)
+[----------] 1 test from LexerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"LexerTest.TracksSourceLocationsAcrossLines" end time: Aug 07 00:30 CST
+"LexerTest.TracksSourceLocationsAcrossLines" time elapsed: 00:00:00
+----------------------------------------------------------
+
+7/14 Testing: LexerTest.TokenizesIdentifiersWithUnderscoresAndDigits
+7/14 Test: LexerTest.TokenizesIdentifiersWithUnderscoresAndDigits
+Command: "/home/opriego/LinuxDev/ocelotl-tensor/build/ocelotl_tests" "--gtest_filter=LexerTest.TokenizesIdentifiersWithUnderscoresAndDigits" "--gtest_also_run_disabled_tests"
+Directory: /home/opriego/LinuxDev/ocelotl-tensor/build
+"LexerTest.TokenizesIdentifiersWithUnderscoresAndDigits" start time: Aug 07 00:30 CST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+Note: Google Test filter = LexerTest.TokenizesIdentifiersWithUnderscoresAndDigits
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from LexerTest
+[ RUN      ] LexerTest.TokenizesIdentifiersWithUnderscoresAndDigits
+[       OK ] LexerTest.TokenizesIdentifiersWithUnderscoresAndDigits (0 ms)
+[----------] 1 test from LexerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"LexerTest.TokenizesIdentifiersWithUnderscoresAndDigits" end time: Aug 07 00:30 CST
+"LexerTest.TokenizesIdentifiersWithUnderscoresAndDigits" time elapsed: 00:00:00
+----------------------------------------------------------
+
+8/14 Testing: LexerTest.TreatsTrailingDotAfterIntegerAsSeparateUnknownToken
+8/14 Test: LexerTest.TreatsTrailingDotAfterIntegerAsSeparateUnknownToken
+Command: "/home/opriego/LinuxDev/ocelotl-tensor/build/ocelotl_tests" "--gtest_filter=LexerTest.TreatsTrailingDotAfterIntegerAsSeparateUnknownToken" "--gtest_also_run_disabled_tests"
+Directory: /home/opriego/LinuxDev/ocelotl-tensor/build
+"LexerTest.TreatsTrailingDotAfterIntegerAsSeparateUnknownToken" start time: Aug 07 00:30 CST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+Note: Google Test filter = LexerTest.TreatsTrailingDotAfterIntegerAsSeparateUnknownToken
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from LexerTest
+[ RUN      ] LexerTest.TreatsTrailingDotAfterIntegerAsSeparateUnknownToken
+[       OK ] LexerTest.TreatsTrailingDotAfterIntegerAsSeparateUnknownToken (0 ms)
+[----------] 1 test from LexerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"LexerTest.TreatsTrailingDotAfterIntegerAsSeparateUnknownToken" end time: Aug 07 00:30 CST
+"LexerTest.TreatsTrailingDotAfterIntegerAsSeparateUnknownToken" time elapsed: 00:00:00
+----------------------------------------------------------
+
+9/14 Testing: LexerTest.TokenizesMultipleDotsWithoutSilentlyAcceptingInvalidFloat
+9/14 Test: LexerTest.TokenizesMultipleDotsWithoutSilentlyAcceptingInvalidFloat
+Command: "/home/opriego/LinuxDev/ocelotl-tensor/build/ocelotl_tests" "--gtest_filter=LexerTest.TokenizesMultipleDotsWithoutSilentlyAcceptingInvalidFloat" "--gtest_also_run_disabled_tests"
+Directory: /home/opriego/LinuxDev/ocelotl-tensor/build
+"LexerTest.TokenizesMultipleDotsWithoutSilentlyAcceptingInvalidFloat" start time: Aug 07 00:30 CST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+Note: Google Test filter = LexerTest.TokenizesMultipleDotsWithoutSilentlyAcceptingInvalidFloat
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from LexerTest
+[ RUN      ] LexerTest.TokenizesMultipleDotsWithoutSilentlyAcceptingInvalidFloat
+[       OK ] LexerTest.TokenizesMultipleDotsWithoutSilentlyAcceptingInvalidFloat (0 ms)
+[----------] 1 test from LexerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"LexerTest.TokenizesMultipleDotsWithoutSilentlyAcceptingInvalidFloat" end time: Aug 07 00:30 CST
+"LexerTest.TokenizesMultipleDotsWithoutSilentlyAcceptingInvalidFloat" time elapsed: 00:00:00
+----------------------------------------------------------
+
+10/14 Testing: LexerTest.SkipsWhitespace
+10/14 Test: LexerTest.SkipsWhitespace
+Command: "/home/opriego/LinuxDev/ocelotl-tensor/build/ocelotl_tests" "--gtest_filter=LexerTest.SkipsWhitespace" "--gtest_also_run_disabled_tests"
+Directory: /home/opriego/LinuxDev/ocelotl-tensor/build
+"LexerTest.SkipsWhitespace" start time: Aug 07 00:30 CST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+Note: Google Test filter = LexerTest.SkipsWhitespace
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from LexerTest
+[ RUN      ] LexerTest.SkipsWhitespace
+[       OK ] LexerTest.SkipsWhitespace (0 ms)
+[----------] 1 test from LexerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"LexerTest.SkipsWhitespace" end time: Aug 07 00:30 CST
+"LexerTest.SkipsWhitespace" time elapsed: 00:00:00
+----------------------------------------------------------
+
+11/14 Testing: LexerTest.ProducesEofForEmptyInput
+11/14 Test: LexerTest.ProducesEofForEmptyInput
+Command: "/home/opriego/LinuxDev/ocelotl-tensor/build/ocelotl_tests" "--gtest_filter=LexerTest.ProducesEofForEmptyInput" "--gtest_also_run_disabled_tests"
+Directory: /home/opriego/LinuxDev/ocelotl-tensor/build
+"LexerTest.ProducesEofForEmptyInput" start time: Aug 07 00:30 CST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+Note: Google Test filter = LexerTest.ProducesEofForEmptyInput
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from LexerTest
+[ RUN      ] LexerTest.ProducesEofForEmptyInput
+[       OK ] LexerTest.ProducesEofForEmptyInput (0 ms)
+[----------] 1 test from LexerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"LexerTest.ProducesEofForEmptyInput" end time: Aug 07 00:30 CST
+"LexerTest.ProducesEofForEmptyInput" time elapsed: 00:00:00
+----------------------------------------------------------
+
+12/14 Testing: LexerTest.RepeatedEofIsStable
+12/14 Test: LexerTest.RepeatedEofIsStable
+Command: "/home/opriego/LinuxDev/ocelotl-tensor/build/ocelotl_tests" "--gtest_filter=LexerTest.RepeatedEofIsStable" "--gtest_also_run_disabled_tests"
+Directory: /home/opriego/LinuxDev/ocelotl-tensor/build
+"LexerTest.RepeatedEofIsStable" start time: Aug 07 00:30 CST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+Note: Google Test filter = LexerTest.RepeatedEofIsStable
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from LexerTest
+[ RUN      ] LexerTest.RepeatedEofIsStable
+[       OK ] LexerTest.RepeatedEofIsStable (0 ms)
+[----------] 1 test from LexerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"LexerTest.RepeatedEofIsStable" end time: Aug 07 00:30 CST
+"LexerTest.RepeatedEofIsStable" time elapsed: 00:00:00
+----------------------------------------------------------
+
+13/14 Testing: LexerTest.DoesNotMatchKeywordPrefixes
+13/14 Test: LexerTest.DoesNotMatchKeywordPrefixes
+Command: "/home/opriego/LinuxDev/ocelotl-tensor/build/ocelotl_tests" "--gtest_filter=LexerTest.DoesNotMatchKeywordPrefixes" "--gtest_also_run_disabled_tests"
+Directory: /home/opriego/LinuxDev/ocelotl-tensor/build
+"LexerTest.DoesNotMatchKeywordPrefixes" start time: Aug 07 00:30 CST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+Note: Google Test filter = LexerTest.DoesNotMatchKeywordPrefixes
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from LexerTest
+[ RUN      ] LexerTest.DoesNotMatchKeywordPrefixes
+[       OK ] LexerTest.DoesNotMatchKeywordPrefixes (0 ms)
+[----------] 1 test from LexerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"LexerTest.DoesNotMatchKeywordPrefixes" end time: Aug 07 00:30 CST
+"LexerTest.DoesNotMatchKeywordPrefixes" time elapsed: 00:00:00
+----------------------------------------------------------
+
+14/14 Testing: LexerTest.TracksByteOffsets
+14/14 Test: LexerTest.TracksByteOffsets
+Command: "/home/opriego/LinuxDev/ocelotl-tensor/build/ocelotl_tests" "--gtest_filter=LexerTest.TracksByteOffsets" "--gtest_also_run_disabled_tests"
+Directory: /home/opriego/LinuxDev/ocelotl-tensor/build
+"LexerTest.TracksByteOffsets" start time: Aug 07 00:30 CST
+Output:
+----------------------------------------------------------
+Running main() from ./googletest/src/gtest_main.cc
+Note: Google Test filter = LexerTest.TracksByteOffsets
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from LexerTest
+[ RUN      ] LexerTest.TracksByteOffsets
+[       OK ] LexerTest.TracksByteOffsets (0 ms)
+[----------] 1 test from LexerTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"LexerTest.TracksByteOffsets" end time: Aug 07 00:30 CST
+"LexerTest.TracksByteOffsets" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Aug 07 00:30 CST

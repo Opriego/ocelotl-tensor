@@ -14,6 +14,9 @@ add_library(
     ocelotl_compiler
     src/frontend/Token.cpp
     src/frontend/Lexer.cpp
+
+    include/ocelotl/frontend/Token.hpp
+    include/ocelotl/frontend/Lexer.hpp
 )
 
 target_include_directories(
@@ -48,3 +51,33 @@ target_compile_options(
     -Wextra
     -Wpedantic
 )
+
+include(CTest)
+
+if(BUILD_TESTING)
+    find_package(GTest REQUIRED)
+
+    add_executable(
+        ocelotl_tests
+        tests/frontend/LexerTests.cpp
+    )
+
+    target_link_libraries(
+        ocelotl_tests
+        PRIVATE
+        ocelotl_compiler
+        GTest::gtest_main
+    )
+
+    target_compile_options(
+        ocelotl_tests
+        PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+    )
+
+    include(GoogleTest)
+
+    gtest_discover_tests(ocelotl_tests)
+endif()
