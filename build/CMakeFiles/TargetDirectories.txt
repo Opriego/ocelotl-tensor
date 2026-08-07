@@ -1,0 +1,4 @@
+/home/opriego/LinuxDev/ocelotl-tensor/build/CMakeFiles/ocelotl_compiler.dir
+/home/opriego/LinuxDev/ocelotl-tensor/build/CMakeFiles/ocelotlc.dir
+/home/opriego/LinuxDev/ocelotl-tensor/build/CMakeFiles/edit_cache.dir
+/home/opriego/LinuxDev/ocelotl-tensor/build/CMakeFiles/rebuild_cache.dir
