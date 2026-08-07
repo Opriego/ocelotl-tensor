@@ -10,20 +10,34 @@ class Lexer {
 public:
     explicit Lexer(std::string_view source);
 
+    [[nodiscard]]
     Token nextToken();
 
 private:
-    [[nodiscard]] bool isAtEnd() const noexcept;
+    [[nodiscard]]
+    bool isAtEnd() const noexcept;
 
+    [[nodiscard]]
     char peek() const noexcept;
+
+    [[nodiscard]]
+    char peekNext() const noexcept;
+
     char advance() noexcept;
 
     void skipWhitespace() noexcept;
 
-    Token makeToken(TokenKind kind, std::size_t startOffset,
-                    SourceLocation startLocation);
+    [[nodiscard]]
+    Token makeToken(
+        TokenKind kind,
+        std::size_t startOffset,
+        SourceLocation startLocation
+    ) const;
 
+    [[nodiscard]]
     Token lexIdentifierOrKeyword();
+
+    [[nodiscard]]
     Token lexNumber();
 
     std::string_view source_;

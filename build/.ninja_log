@@ -1,7 +1,10 @@
 # ninja log v5
-202	234	1786082416078126324	ocelotlc	f786e86c87ee2a1
-0	202	1786082416047227718	CMakeFiles/ocelotlc.dir/src/main.cpp.o	e92629a2ed3f8722
-1	175	1786082589731545404	CMakeFiles/ocelotl_compiler.dir/src/frontend/Token.cpp.o	b7424becbb53c6e2
 176	211	1786082589764545268	libocelotl_compiler.a	116e4e4aa1a29581
+1	175	1786082589731545404	CMakeFiles/ocelotl_compiler.dir/src/frontend/Token.cpp.o	b7424becbb53c6e2
 1	227	1786082589782545194	CMakeFiles/ocelotlc.dir/src/main.cpp.o	fb9e2c77c4f38f59
 227	259	1786082589815190201	ocelotlc	ef29a200bd0fd66f
+0	29	1786082838523957350	build.ninja	a8198efff27f84b8
+0	175	1786082838702509194	CMakeFiles/ocelotl_compiler.dir/src/frontend/Lexer.cpp.o	e838378cf2d74f7b
+0	200	1786082838727509091	CMakeFiles/ocelotlc.dir/src/main.cpp.o	fb9e2c77c4f38f59
+175	210	1786082838736509054	libocelotl_compiler.a	b41087a3c0560307
+210	242	1786082838770047130	ocelotlc	ef29a200bd0fd66f

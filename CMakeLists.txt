@@ -13,6 +13,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_library(
     ocelotl_compiler
     src/frontend/Token.cpp
+    src/frontend/Lexer.cpp
 )
 
 target_include_directories(

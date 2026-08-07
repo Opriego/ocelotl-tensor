@@ -51,6 +51,13 @@ build CMakeFiles/ocelotl_compiler.dir/src/frontend/Token.cpp.o: CXX_COMPILER__oc
   OBJECT_DIR = CMakeFiles/ocelotl_compiler.dir
   OBJECT_FILE_DIR = CMakeFiles/ocelotl_compiler.dir/src/frontend
 
+build CMakeFiles/ocelotl_compiler.dir/src/frontend/Lexer.cpp.o: CXX_COMPILER__ocelotl_compiler_ /home/opriego/LinuxDev/ocelotl-tensor/src/frontend/Lexer.cpp || cmake_object_order_depends_target_ocelotl_compiler
+  DEP_FILE = CMakeFiles/ocelotl_compiler.dir/src/frontend/Lexer.cpp.o.d
+  FLAGS = -Wall -Wextra -Wpedantic -std=c++20
+  INCLUDES = -I/home/opriego/LinuxDev/ocelotl-tensor/include
+  OBJECT_DIR = CMakeFiles/ocelotl_compiler.dir
+  OBJECT_FILE_DIR = CMakeFiles/ocelotl_compiler.dir/src/frontend
+
 
 # =============================================================================
 # Link build statements for STATIC_LIBRARY target ocelotl_compiler
@@ -59,7 +66,7 @@ build CMakeFiles/ocelotl_compiler.dir/src/frontend/Token.cpp.o: CXX_COMPILER__oc
 #############################################
 # Link the static library libocelotl_compiler.a
 
-build libocelotl_compiler.a: CXX_STATIC_LIBRARY_LINKER__ocelotl_compiler_ CMakeFiles/ocelotl_compiler.dir/src/frontend/Token.cpp.o
+build libocelotl_compiler.a: CXX_STATIC_LIBRARY_LINKER__ocelotl_compiler_ CMakeFiles/ocelotl_compiler.dir/src/frontend/Token.cpp.o CMakeFiles/ocelotl_compiler.dir/src/frontend/Lexer.cpp.o
   OBJECT_DIR = CMakeFiles/ocelotl_compiler.dir
   POST_BUILD = :
   PRE_LINK = :
