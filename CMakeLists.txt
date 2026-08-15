@@ -12,11 +12,16 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(
     ocelotl_compiler
+
+    # Frontend
     src/frontend/Token.cpp
     src/frontend/Lexer.cpp
 
     include/ocelotl/frontend/Token.hpp
     include/ocelotl/frontend/Lexer.hpp
+
+    # AST
+    include/ocelotl/ast/AST.hpp
 )
 
 target_include_directories(
@@ -59,7 +64,9 @@ if(BUILD_TESTING)
 
     add_executable(
         ocelotl_tests
+
         tests/frontend/LexerTests.cpp
+        tests/ast/ASTTests.cpp
     )
 
     target_link_libraries(
