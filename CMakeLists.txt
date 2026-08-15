@@ -16,9 +16,11 @@ add_library(
     # Frontend
     src/frontend/Token.cpp
     src/frontend/Lexer.cpp
+    src/frontend/Parser.cpp
 
     include/ocelotl/frontend/Token.hpp
     include/ocelotl/frontend/Lexer.hpp
+    include/ocelotl/frontend/Parser.hpp
 
     # AST
     include/ocelotl/ast/AST.hpp
@@ -66,6 +68,7 @@ if(BUILD_TESTING)
         ocelotl_tests
 
         tests/frontend/LexerTests.cpp
+        tests/frontend/ParserTests.cpp
         tests/ast/ASTTests.cpp
     )
 
