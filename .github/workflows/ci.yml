@@ -39,7 +39,13 @@ jobs:
           sudo apt-get install -y \
             cmake \
             ninja-build \
+            libgtest-dev \
             g++
+
+      - name: Install Clang
+        if: matrix.compiler == 'clang'
+        run: |
+          sudo apt-get install -y clang
 
       - name: Configure GCC
         if: matrix.compiler == 'gcc'
@@ -49,20 +55,16 @@ jobs:
             -B build \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DCMAKE_C_COMPILER=gcc \
             -DCMAKE_CXX_COMPILER=g++
 
       - name: Configure Clang
         if: matrix.compiler == 'clang'
         run: |
-          sudo apt-get install -y clang
-
           cmake \
             -S . \
             -B build \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DCMAKE_C_COMPILER=clang \
             -DCMAKE_CXX_COMPILER=clang++
 
       - name: Build
