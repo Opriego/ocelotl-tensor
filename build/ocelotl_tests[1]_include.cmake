@@ -1,5 +1,0 @@
-if(EXISTS "/home/opriego/LinuxDev/ocelotl-tensor/build/ocelotl_tests[1]_tests.cmake")
-  include("/home/opriego/LinuxDev/ocelotl-tensor/build/ocelotl_tests[1]_tests.cmake")
-else()
-  add_test(ocelotl_tests_NOT_BUILT ocelotl_tests_NOT_BUILT)
-endif()

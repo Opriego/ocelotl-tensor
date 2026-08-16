@@ -4,13 +4,29 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <stdexcept>
+#include <string>
 #include <string_view>
 #include <variant>
 
-#include <stdexcept>
-#include <string>
-
 using namespace ocelotl;
+
+namespace {
+
+// Helper used by negative parser tests.
+//
+// Parser::parseProgram() is [[nodiscard]], which is appropriate because
+// silently discarding a successfully parsed AST is generally a bug.
+//
+// Negative tests intentionally expect parsing to fail, so we explicitly
+// bind the return value. If parsing unexpectedly succeeds, the value is
+// still handled correctly and no [[nodiscard]] warning is generated.
+void parseExpectingFailure(frontend::Parser& parser)
+{
+    [[maybe_unused]] const auto program = parser.parseProgram();
+}
+
+} // namespace
 
 TEST(ParserTest, ParsesTensorDeclaration)
 {
@@ -18,7 +34,7 @@ TEST(ParserTest, ParsesTensorDeclaration)
         "tensor A: f32[1024,1024]";
 
     frontend::Parser parser{source};
-    ast::Program program = parser.parseProgram();
+    const ast::Program program = parser.parseProgram();
 
     ASSERT_EQ(program.statements.size(), 1);
 
@@ -51,7 +67,7 @@ TEST(ParserTest, ParsesAssignment)
         "C = A";
 
     frontend::Parser parser{source};
-    ast::Program program = parser.parseProgram();
+    const ast::Program program = parser.parseProgram();
 
     ASSERT_EQ(program.statements.size(), 1);
 
@@ -88,9 +104,15 @@ TEST(ParserTest, ParsesCallExpression)
         "C = matmul(A, B)";
 
     frontend::Parser parser{source};
-    ast::Program program = parser.parseProgram();
+    const ast::Program program = parser.parseProgram();
 
     ASSERT_EQ(program.statements.size(), 1);
+
+    ASSERT_TRUE(
+        std::holds_alternative<ast::Assignment>(
+            program.statements[0]
+        )
+    );
 
     const auto& assignment =
         std::get<ast::Assignment>(
@@ -103,7 +125,7 @@ TEST(ParserTest, ParsesCallExpression)
         >(assignment.value)
     );
 
-    const auto call =
+    const auto& call =
         std::get<std::shared_ptr<ast::CallExpr>>(
             assignment.value
         );
@@ -113,6 +135,18 @@ TEST(ParserTest, ParsesCallExpression)
     EXPECT_EQ(call->callee, "matmul");
 
     ASSERT_EQ(call->arguments.size(), 2);
+
+    ASSERT_TRUE(
+        std::holds_alternative<ast::IdentifierExpr>(
+            call->arguments[0]
+        )
+    );
+
+    ASSERT_TRUE(
+        std::holds_alternative<ast::IdentifierExpr>(
+            call->arguments[1]
+        )
+    );
 
     const auto& lhs =
         std::get<ast::IdentifierExpr>(
@@ -138,7 +172,7 @@ TEST(ParserTest, ParsesCompleteProgram)
         "return D\n";
 
     frontend::Parser parser{source};
-    ast::Program program = parser.parseProgram();
+    const ast::Program program = parser.parseProgram();
 
     ASSERT_EQ(program.statements.size(), 5);
 
@@ -199,7 +233,7 @@ TEST(ParserTest, RejectsTensorDeclarationWithoutColon)
     frontend::Parser parser{source};
 
     EXPECT_THROW(
-        parser.parseProgram(),
+        parseExpectingFailure(parser),
         std::runtime_error
     );
 }
@@ -212,7 +246,7 @@ TEST(ParserTest, RejectsTensorDeclarationWithMissingDimension)
     frontend::Parser parser{source};
 
     EXPECT_THROW(
-        parser.parseProgram(),
+        parseExpectingFailure(parser),
         std::runtime_error
     );
 }
@@ -225,7 +259,7 @@ TEST(ParserTest, RejectsAssignmentWithoutEqual)
     frontend::Parser parser{source};
 
     EXPECT_THROW(
-        parser.parseProgram(),
+        parseExpectingFailure(parser),
         std::runtime_error
     );
 }
@@ -238,7 +272,7 @@ TEST(ParserTest, RejectsCallWithoutClosingParenthesis)
     frontend::Parser parser{source};
 
     EXPECT_THROW(
-        parser.parseProgram(),
+        parseExpectingFailure(parser),
         std::runtime_error
     );
 }
@@ -251,7 +285,7 @@ TEST(ParserTest, RejectsUnknownToken)
     frontend::Parser parser{source};
 
     EXPECT_THROW(
-        parser.parseProgram(),
+        parseExpectingFailure(parser),
         std::runtime_error
     );
 }
@@ -264,7 +298,7 @@ TEST(ParserTest, RejectsReturnWithoutExpression)
     frontend::Parser parser{source};
 
     EXPECT_THROW(
-        parser.parseProgram(),
+        parseExpectingFailure(parser),
         std::runtime_error
     );
 }
@@ -277,7 +311,9 @@ TEST(ParserTest, ReportsLocationForMissingColon)
     frontend::Parser parser{source};
 
     try {
-        parser.parseProgram();
+        [[maybe_unused]] const auto program =
+            parser.parseProgram();
+
         FAIL() << "Expected parser to throw";
     }
     catch (const std::runtime_error& error) {
@@ -303,7 +339,9 @@ TEST(ParserTest, ReportsMissingClosingParenthesis)
     frontend::Parser parser{source};
 
     try {
-        parser.parseProgram();
+        [[maybe_unused]] const auto program =
+            parser.parseProgram();
+
         FAIL() << "Expected parser to throw";
     }
     catch (const std::runtime_error& error) {
@@ -315,5 +353,3 @@ TEST(ParserTest, ReportsMissingClosingParenthesis)
         );
     }
 }
-
-

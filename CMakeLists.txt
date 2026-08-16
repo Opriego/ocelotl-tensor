@@ -18,9 +18,17 @@ add_library(
     src/frontend/Lexer.cpp
     src/frontend/Parser.cpp
 
+    # include
     include/ocelotl/frontend/Token.hpp
     include/ocelotl/frontend/Lexer.hpp
     include/ocelotl/frontend/Parser.hpp
+
+    # semantic
+    src/semantic/SymbolTable.cpp
+    src/semantic/SemanticAnalyzer.cpp
+
+    # IR
+    src/ir/IRGenerator.cpp
 
     # AST
     include/ocelotl/ast/AST.hpp
@@ -68,8 +76,10 @@ if(BUILD_TESTING)
         ocelotl_tests
 
         tests/frontend/LexerTests.cpp
-        tests/frontend/ParserTests.cpp
+        tests/frontend/ParserTests.cpp        
         tests/ast/ASTTests.cpp
+        tests/semantic/SemanticAnalyzerTests.cpp
+        tests/ir/IRGeneratorTests.cpp
     )
 
     target_link_libraries(
