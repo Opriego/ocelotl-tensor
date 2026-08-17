@@ -278,6 +278,28 @@ Areas of focus include:
 * CPU/GPU code generation
 * testing and diagnostics
 
-## License
+## Licensing
 
-License information will be added as the project matures.
+Ocelotl Tensor Compiler is source-available software licensed under the
+PolyForm Noncommercial License 1.0.0.
+
+You may use, study, modify, and redistribute this software for permitted
+non-commercial purposes in accordance with the terms of the license.
+
+Copyright © 2026 Oscar Priego.
+
+### Commercial Use
+
+Commercial use is not granted under the PolyForm Noncommercial License.
+
+If you or your organization are interested in using Ocelotl, portions of
+its source code, or derivative work for commercial purposes, please contact
+the copyright holder to obtain a separate commercial license.
+
+Commercial licensing terms are negotiated separately and may include
+licensing fees or royalties.
+
+Commercial licensing inquiries:
+Oscar Priego
+
+
