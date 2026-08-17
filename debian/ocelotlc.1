@@ -1,0 +1,60 @@
+.TH OCELOTLC 1 "August 2026" "Ocelotl Tensor Compiler 0.1.0" "User Commands"
+.SH NAME
+ocelotlc \- experimental compiler with LLVM IR generation
+.SH SYNOPSIS
+.B ocelotlc
+.I source-file
+.B --emit-tokens
+
+.B ocelotlc
+.I source-file
+.B --emit-llvm
+.SH DESCRIPTION
+.B ocelotlc
+is the command-line compiler for the Ocelotl Tensor Compiler project.
+
+Ocelotl is an experimental compiler implemented in modern C++.
+Its compilation pipeline includes lexical analysis, parsing,
+semantic analysis, an SSA-inspired intermediate representation,
+and LLVM IR generation.
+
+The compiler currently supports inspection of lexical tokens and
+generation of LLVM intermediate representation for supported programs.
+.SH OPTIONS
+.TP
+.B --emit-tokens
+Tokenize the input source file and print the resulting token stream.
+.TP
+.B --emit-llvm
+Compile the input through the Ocelotl frontend, semantic analyzer,
+Ocelotl intermediate representation, and LLVM backend, then print
+the generated LLVM IR.
+.SH EXAMPLES
+Display the tokens generated from an Ocelotl source file:
+.PP
+.nf
+.RS
+ocelotlc program.oc --emit-tokens
+.RE
+.fi
+
+Generate LLVM IR:
+.PP
+.nf
+.RS
+ocelotlc program.oc --emit-llvm
+.RE
+.fi
+.SH AUTHOR
+Ocelotl Tensor Compiler was written by Oscar Priego.
+.SH COPYRIGHT
+Copyright \(co 2026 Oscar Priego.
+
+Ocelotl Tensor Compiler is distributed under the
+PolyForm Noncommercial License 1.0.0.
+
+Commercial use requires a separate license from the copyright holder.
+See the package copyright file for the complete licensing terms.
+.SH SEE ALSO
+.BR clang (1),
+.BR gcc (1)

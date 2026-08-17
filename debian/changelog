@@ -1,0 +1,5 @@
+ocelotl-tensor (0.1.0-1) unstable; urgency=medium
+
+  * Initial Debian package.
+
+ -- Oscar Priego <oscar.priegov@gmail.com>  Mon, 17 Aug 2026 00:15:00 -0600

@@ -1,0 +1,21 @@
+Source: ocelotl-tensor
+Section: non-free/devel
+Priority: optional
+Maintainer: Oscar Priego <oscar.priegov@gmail.com>
+Build-Depends:
+ debhelper-compat (= 13),
+ cmake,
+ ninja-build,
+ llvm-dev,
+ libgtest-dev
+Standards-Version: 4.7.4
+Rules-Requires-Root: no
+Homepage: https://github.com/opriego/ocelotl-tensor
+
+Package: ocelotlc
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Ocelotl tensor compiler
+ Ocelotl is an experimental compiler implemented in modern C++.
+ It provides lexical and syntactic analysis, semantic analysis,
+ an SSA-inspired intermediate representation, and LLVM IR generation.

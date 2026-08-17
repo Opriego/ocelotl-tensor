@@ -1,2 +1,15 @@
-build*/
+# Local build trees
+build/
+build-install/
 stage/
+obj-*/
+
+# Debian packaging build artifacts
+debian/.debhelper/
+debian/debhelper-build-stamp
+debian/files
+debian/*.debhelper.log
+debian/*.substvars
+debian/ocelotlc/
+
+

@@ -13,6 +13,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 include(CTest)
 include(GNUInstallDirs)
 
+#
+# LLVM
+#
 
 find_package(LLVM REQUIRED CONFIG)
 
@@ -31,6 +34,10 @@ llvm_map_components_to_libnames(
     Support
 )
 
+#
+# Ocelotl compiler library
+#
+
 add_library(
     ocelotl_compiler
 
@@ -46,17 +53,37 @@ add_library(
     src/codegen/llvm/LLVMCodeGenerator.cpp
 )
 
+#
+# Ocelotl public headers.
+#
+# LLVM headers are also PUBLIC because LLVM types such as llvm::Module
+# are exposed by Ocelotl's public code-generation interface.
+#
+# LLVM is marked SYSTEM so warnings originating from LLVM headers are
+# not treated as warnings from the Ocelotl source tree.
+#
+
 target_include_directories(
     ocelotl_compiler
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-    PRIVATE
+)
+
+target_include_directories(
+    ocelotl_compiler
+    SYSTEM PUBLIC
         ${LLVM_INCLUDE_DIRS}
 )
 
+#
+# LLVM compile definitions must propagate to targets consuming
+# ocelotl_compiler because those consumers may compile headers
+# containing LLVM declarations.
+#
+
 target_compile_definitions(
     ocelotl_compiler
-    PRIVATE
+    PUBLIC
         ${LLVM_DEFINITIONS_LIST}
 )
 
@@ -68,11 +95,21 @@ target_compile_options(
         -Wpedantic
 )
 
+#
+# LLVM libraries are part of the compiler library's public link
+# interface because consumers of ocelotl_compiler may use LLVM types
+# exposed by its public API.
+#
+
 target_link_libraries(
     ocelotl_compiler
     PUBLIC
         ${LLVM_LIBS}
 )
+
+#
+# Command-line compiler
+#
 
 add_executable(
     ocelotlc
@@ -93,10 +130,18 @@ target_compile_options(
         -Wpedantic
 )
 
+#
+# Installation
+#
+
 install(
     TARGETS ocelotlc
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+#
+# Tests
+#
 
 if(BUILD_TESTING)
 
