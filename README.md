@@ -1,56 +1,120 @@
 # Ocelotl Tensor Compiler
 
-Ocelotl is an experimental tensor-oriented compiler written in modern C++20.
+Ocelotl is an experimental compiler written in modern C++20 for exploring end-to-end compiler engineering, from source-language analysis to LLVM IR generation.
 
-The project is designed as a systems/compiler engineering portfolio project focused on compiler architecture, semantic analysis, intermediate representations, tensor shape inference, and eventually LLVM-based code generation.
+The project currently implements a compiler frontend, semantic analysis, a custom SSA-inspired intermediate representation, an LLVM backend for scalar programs, automated testing, CI across GCC and Clang, and Debian packaging.
 
-## Current compiler pipeline
+The longer-term goal is to evolve Ocelotl into a tensor-oriented compiler capable of progressively lowering tensor operations toward CPU and GPU execution.
+
+---
+
+## Compiler pipeline
 
 ```text
-Source
-  ↓
-Lexer
-  ↓
-Parser
-  ↓
-AST
-  ↓
+Ocelotl source
+      |
+      v
+    Lexer
+      |
+      v
+    Parser
+      |
+      v
+     AST
+      |
+      v
 Semantic Analysis
-  ↓
-Type & Shape Inference
-  ↓
-Ocelotl IR
-  ↓
-LLVM IR        ← in progress
-  ↓
-Native Code
+  - symbol resolution
+  - type inference
+  - shape inference
+  - validation
+      |
+      v
+   Ocelotl IR
+  (SSA-inspired)
+      |
+      v
+ LLVM Lowering
+      |
+      v
+ llvm::Module
+      |
+      v
+ LLVM Verifier
+      |
+      v
+   LLVM IR
 ```
 
-## Current features
+The compiler deliberately keeps the frontend and semantic model independent from LLVM-specific implementation details.
 
-* C++20 codebase
-* Lexer with source location and byte-offset tracking
-* Recursive-descent parser
-* Abstract Syntax Tree representation
-* Parser diagnostics with source locations
-* Tensor declarations
-* Identifier resolution
-* Semantic analysis
-* Symbol table
-* Duplicate declaration detection
-* Type inference
-* Tensor shape inference
-* Built-in tensor operations
+This provides a clean boundary between language semantics, the Ocelotl intermediate representation, and backend lowering.
 
-  * `matmul`
-  * `relu`
-* Custom SSA-inspired intermediate representation
-* Integer and floating-point literal representation
-* CMake + Ninja build system
-* GoogleTest test suite
-* GCC and Clang compatible codebase
+---
 
-## Example
+## Current status
+
+### Frontend
+
+Implemented:
+
+* lexer with source locations and byte offsets
+* recursive-descent parser
+* Abstract Syntax Tree
+* integer and floating-point literals
+* variable assignments
+* tensor declarations
+* return statements
+* parser diagnostics with source locations
+
+### Semantic analysis
+
+Implemented:
+
+* symbol table
+* identifier resolution
+* duplicate declaration detection
+* type inference
+* tensor shape inference
+* semantic validation
+* validation of built-in tensor operations
+
+Currently supported tensor operations include:
+
+* `matmul`
+* `relu`
+
+For matrix multiplication, shape compatibility is validated before IR generation.
+
+Conceptually:
+
+```text
+[M,K] × [K,N] -> [M,N]
+```
+
+---
+
+## Ocelotl IR
+
+Ocelotl uses a custom SSA-inspired intermediate representation between semantic analysis and LLVM lowering.
+
+Example source:
+
+```text
+X = 42
+return X
+```
+
+is represented conceptually as:
+
+```text
+%0 = constant 42
+return %0
+```
+
+Tensor programs are also represented in Ocelotl IR.
+
+For example:
 
 ```text
 tensor A: f32[1024,512]
@@ -62,16 +126,7 @@ D = relu(C)
 return D
 ```
 
-Semantic analysis infers:
-
-```text
-A : f32[1024,512]
-B : f32[512,256]
-C : f32[1024,256]
-D : f32[1024,256]
-```
-
-The current IR represents the computation as SSA-like values:
+produces an IR model equivalent to:
 
 ```text
 %0 = tensor.decl A : f32[1024,512]
@@ -81,225 +136,347 @@ The current IR represents the computation as SSA-like values:
 return %3
 ```
 
-## Semantic validation
+The custom IR is intentionally separate from LLVM IR so compiler analysis and tensor-specific transformations can evolve independently from the backend.
 
-The compiler detects semantic errors before IR generation.
+---
+
+## LLVM backend
+
+Ocelotl contains a native LLVM-based code-generation layer under:
+
+```text
+src/codegen/llvm/
+```
+
+The current backend milestone supports scalar constant programs.
+
+It currently lowers:
+
+* integer constants to LLVM `i64`
+* floating-point constants to LLVM `double`
+* return operations
+* Ocelotl SSA-like value IDs to `llvm::Value*`
+
+The generated module is checked with:
+
+```cpp
+llvm::verifyModule(...)
+```
+
+before being returned to the caller.
 
 For example:
 
 ```text
-tensor A: f32[1024,512]
-tensor B: f32[128,256]
-
-C = matmul(A, B)
+X = 42
+return X
 ```
 
-is rejected because matrix multiplication requires compatible inner dimensions.
+can be compiled with:
 
-Conceptually:
+```bash
+./build/ocelotlc examples/return42.oc --emit-llvm
+```
+
+and produces LLVM IR containing a generated `main` function returning the scalar value.
+
+### Current backend limitation
+
+Tensor operations are represented by the frontend and Ocelotl IR, but LLVM lowering for:
+
+* tensor declarations
+* `matmul`
+* `relu`
+
+is not implemented yet.
+
+Tensor lowering is the next major compiler-backend milestone.
+
+---
+
+## Command-line compiler
+
+The compiler executable is:
 
 ```text
-[M,K] × [K,N] → [M,N]
+ocelotlc
 ```
+
+Current modes include:
+
+```bash
+ocelotlc <source-file> --emit-tokens
+```
+
+and:
+
+```bash
+ocelotlc <source-file> --emit-llvm
+```
+
+Example:
+
+```bash
+./build/ocelotlc examples/return42.oc --emit-llvm
+```
+
+---
 
 ## Building
 
-Requirements:
+### Requirements
 
-* C++20 compiler
-* CMake
+The project currently requires:
+
+* C++20-capable GCC or Clang
+* CMake 3.22+
 * Ninja
+* LLVM development libraries
 * GoogleTest
 
-Configure:
+On Debian or Ubuntu, the primary development dependencies can be installed with:
+
+```bash
+sudo apt update
+sudo apt install cmake ninja-build llvm-dev libgtest-dev
+```
+
+### Configure
 
 ```bash
 cmake -S . -B build -G Ninja
 ```
 
-Build:
+If CMake does not automatically locate LLVM:
+
+```bash
+cmake \
+    -S . \
+    -B build \
+    -G Ninja \
+    -DLLVM_DIR="$(llvm-config --cmakedir)"
+```
+
+### Build
 
 ```bash
 cmake --build build
 ```
 
-Run the test suite:
+### Run tests
 
 ```bash
 ctest --test-dir build --output-on-failure
 ```
 
+---
+
 ## Testing
 
-The project currently includes tests covering:
+The GoogleTest suite covers multiple compiler layers, including:
 
 * lexical analysis
 * source locations
 * malformed tokens
-* parser behavior
+* parsing
 * parser diagnostics
 * AST construction
 * symbol resolution
 * semantic errors
 * type inference
-* shape inference
-* IR generation
+* tensor shape inference
+* Ocelotl IR generation
+* LLVM IR generation
+* LLVM module validity
+* unsupported backend operations
 
-Current status:
-
-```text
-44 tests
-44 passed
-0 failed
-```
-
-## Architecture
+LLVM code-generation tests exercise the full path:
 
 ```text
-include/ocelotl/
-├── ast/
-├── frontend/
-├── semantic/
-└── ir/
-
-src/
-├── frontend/
-├── semantic/
-└── ir/
-
-tests/
-├── ast/
-├── frontend/
-├── semantic/
-└── ir/
+source
+  -> parser
+  -> semantic analysis
+  -> Ocelotl IR
+  -> LLVM lowering
+  -> llvm::Module
+  -> LLVM verification
 ```
 
-The compiler is intentionally separated into independent stages so that each layer can evolve without tightly coupling the frontend to a specific backend.
+---
 
-### Frontend
+## Continuous integration
 
-The frontend performs:
+GitHub Actions builds and tests the project on Ubuntu using a compiler/build-mode matrix:
 
 ```text
-source → tokens → AST
+GCC   / Debug
+GCC   / Release
+Clang / Debug
+Clang / Release
 ```
 
-### Semantic analysis
+The CI pipeline configures the project with CMake and Ninja and runs the compiler test suite for every supported matrix combination.
 
-Semantic analysis performs:
+---
+
+## Debian packaging
+
+Ocelotl includes Debian package metadata under:
 
 ```text
-AST
- ↓
-symbol resolution
- ↓
-type inference
- ↓
-shape inference
- ↓
-semantic validation
+debian/
 ```
 
-### Ocelotl IR
+including:
 
-Ocelotl uses a custom intermediate representation between semantic analysis and backend lowering.
+```text
+debian/control
+debian/rules
+debian/changelog
+debian/copyright
+debian/ocelotlc.1
+debian/ocelotlc.manpages
+debian/source/
+```
 
-This separation allows the frontend language semantics to remain independent from LLVM-specific implementation details.
+The binary package is named:
+
+```text
+ocelotlc
+```
+
+and uses the standard Debian CMake/Ninja build integration through `debhelper`.
+
+A package can be built using standard Debian tooling, for example:
+
+```bash
+dpkg-buildpackage -us -uc -b
+```
+
+The package installs the compiler executable and its manual page.
+
+---
+
+## Repository structure
+
+```text
+.
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+├── debian/
+├── docs/
+├── examples/
+├── include/
+│   └── ocelotl/
+│       ├── ast/
+│       ├── codegen/
+│       ├── frontend/
+│       ├── ir/
+│       └── semantic/
+├── src/
+│   ├── codegen/
+│   │   └── llvm/
+│   ├── frontend/
+│   ├── ir/
+│   ├── semantic/
+│   └── main.cpp
+└── tests/
+    ├── ast/
+    ├── codegen/
+    ├── frontend/
+    ├── ir/
+    └── semantic/
+```
+
+---
+
+## Design goals
+
+Ocelotl is intended to explore practical compiler engineering rather than only language parsing.
+
+The project focuses on:
+
+* frontend architecture
+* compiler diagnostics
+* semantic correctness
+* symbol resolution
+* type systems
+* tensor shape analysis
+* SSA concepts
+* intermediate representation design
+* LLVM integration
+* compiler verification
+* build-system integration
+* toolchain testing
+* Debian/Linux packaging
+* eventual CPU and GPU code generation
+
+---
 
 ## Roadmap
 
-### LLVM backend
+### Near term
 
-Next milestone:
+* expand scalar LLVM lowering
+* add arithmetic operations
+* improve LLVM type lowering
+* introduce control-flow representation
+* implement basic blocks
+* introduce PHI nodes where required
+* extend compiler diagnostics
+* expand LLVM backend tests
+* add sanitizer CI configurations
 
-```text
-Ocelotl IR
-    ↓
-LLVM lowering
-    ↓
-llvm::Module
-    ↓
-LLVM verification
-    ↓
-LLVM IR
-    ↓
-native object code
-```
+### Tensor lowering
 
-Planned work includes:
+* define a concrete tensor memory representation
+* lower tensor declarations
+* lower element-wise operations
+* lower `relu`
+* lower matrix multiplication
+* implement shape-aware transformations
+* investigate loop-based CPU lowering
 
-* LLVM type lowering
-* LLVM IR generation
-* `llvm::verifyModule`
-* scalar code generation
-* tensor representation
-* native object generation
-* LLVM optimization passes
+### Optimization
 
-### Toolchain engineering
-
-Planned compiler/toolchain work:
-
-* GCC and Clang CI matrix
-* sanitizers
-* compiler warnings as errors in CI
-* Debian/Ubuntu packaging
-* GCC plugin experiments
-* LLVM optimization pipeline
-* compiler diagnostics improvements
-
-### Tensor compiler work
-
-Longer-term areas of exploration:
-
-* richer tensor operations
-* broadcasting
-* shape propagation
 * constant folding
-* custom optimization passes
-* tensor lowering
-* CPU code generation
+* dead-code elimination
+* algebraic simplification
+* data-flow analysis
+* Ocelotl IR optimization passes
+* LLVM optimization-pipeline integration
+
+### Longer term
+
+* native object generation
+* CPU-oriented tensor optimizations
+* SIMD/vector lowering
 * GPU-oriented lowering
-* MLIR integration
+* MLIR experiments
+* custom compiler passes
 
-## Project goals
+---
 
-Ocelotl is intended to explore practical compiler engineering rather than only language syntax.
+## Project scope
 
-Areas of focus include:
+Ocelotl is an experimental compiler and compiler-engineering project.
 
-* compiler frontend design
-* semantic correctness
-* intermediate representation design
-* SSA concepts
-* optimization
-* LLVM integration
-* toolchain engineering
-* CPU/GPU code generation
-* testing and diagnostics
+It is not currently intended to be a production tensor framework or a replacement for established machine-learning compiler stacks.
 
-## Licensing
+The value of the project is in implementing and exposing the compiler pipeline explicitly, allowing individual stages to be studied, tested, extended, and optimized independently.
 
-Ocelotl Tensor Compiler is source-available software licensed under the
-PolyForm Noncommercial License 1.0.0.
+---
 
-You may use, study, modify, and redistribute this software for permitted
-non-commercial purposes in accordance with the terms of the license.
+## License
+
+Ocelotl Tensor Compiler is source-available under the PolyForm Noncommercial License 1.0.0.
+
+The repository may be used, studied, modified, and redistributed for uses permitted by that license.
+
+Commercial use requires a separate license from the copyright holder.
 
 Copyright © 2026 Oscar Priego.
 
-### Commercial Use
-
-Commercial use is not granted under the PolyForm Noncommercial License.
-
-If you or your organization are interested in using Ocelotl, portions of
-its source code, or derivative work for commercial purposes, please contact
-the copyright holder to obtain a separate commercial license.
-
-Commercial licensing terms are negotiated separately and may include
-licensing fees or royalties.
-
-Commercial licensing inquiries:
-Oscar Priego
 
 
