@@ -592,8 +592,10 @@ debian/rules
 debian/changelog
 debian/copyright
 debian/ocelotlc.1
-debian/ocelotlc.manpages
+debian/*.install
+debian/libocelotlrt1.symbols
 debian/source/
+debian/tests/
 ```
 
 The binary packages are named:
@@ -604,7 +606,7 @@ libocelotlrt1
 libocelotlrt-dev
 ```
 
-and uses the standard Debian CMake/Ninja build integration through `debhelper`.
+and use the standard Debian CMake/Ninja build integration through `debhelper`.
 
 A package can be built using standard Debian tooling, for example:
 
@@ -612,8 +614,11 @@ A package can be built using standard Debian tooling, for example:
 dpkg-buildpackage -us -uc -b
 ```
 
-The packages install the compiler and manual page, the versioned shared
-runtime, and the runtime development header/static library.
+`ocelotlc` contains the compiler and manual page. `libocelotlrt1` contains the
+versioned shared runtime. `libocelotlrt-dev` contains the public header, static
+archive, and unversioned linker symlink. The Debian build runs the upstream
+tests, and the small autopkgtests exercise the installed compiler and both
+runtime linkage models.
 
 ---
 

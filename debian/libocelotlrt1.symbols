@@ -1,0 +1,5 @@
+libocelotlrt.so.1 libocelotlrt1 #MINVER#
+* Build-Depends-Package: libocelotlrt-dev
+ ocelotl_rt_v1_alloc@Base 0.1.0
+ ocelotl_rt_v1_free@Base 0.1.0
+ ocelotl_rt_v1_last_error@Base 0.1.0

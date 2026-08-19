@@ -1,0 +1,25 @@
+#!/bin/sh
+# Copyright (C) 2026 Oscar Priego Verdugo
+# SPDX-License-Identifier: GPL-3.0-only
+
+set -eu
+
+workdir="${AUTOPKGTEST_TMP:-${TMPDIR:-/tmp}}/ocelotlrt-consumer"
+mkdir -p "$workdir"
+
+printf '%s\n' \
+    '#include <ocelotl/runtime/v1/runtime.h>' \
+    '#include <stdint.h>' \
+    'int main(void) {' \
+    '  void *memory = ocelotl_rt_v1_alloc(64, 64);' \
+    '  if (memory == 0 || ((uintptr_t)memory % 64) != 0) return 1;' \
+    '  ocelotl_rt_v1_free(memory);' \
+    '  return ocelotl_rt_v1_last_error()[0] != '\''\\0'\'';' \
+    '}' > "$workdir/consumer.c"
+
+cc "$workdir/consumer.c" -locelotlrt -o "$workdir/consumer-dynamic"
+"$workdir/consumer-dynamic"
+
+cc "$workdir/consumer.c" -Wl,-Bstatic -locelotlrt -Wl,-Bdynamic \
+    -o "$workdir/consumer-static"
+"$workdir/consumer-static"

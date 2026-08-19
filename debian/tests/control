@@ -1,0 +1,5 @@
+Tests: compiler-smoke
+Depends: ocelotlc, build-essential, binutils
+
+Tests: runtime-consumer
+Depends: libocelotlrt-dev, build-essential

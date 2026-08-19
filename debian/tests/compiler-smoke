@@ -1,0 +1,18 @@
+#!/bin/sh
+# Copyright (C) 2026 Oscar Priego Verdugo
+# SPDX-License-Identifier: GPL-3.0-only
+
+set -eu
+
+workdir="${AUTOPKGTEST_TMP:-${TMPDIR:-/tmp}}/ocelotlc-smoke"
+mkdir -p "$workdir"
+
+printf '%s\n' 'return 42' > "$workdir/program.oc"
+ocelotlc "$workdir/program.oc" --emit-llvm -o "$workdir/program.ll"
+ocelotlc "$workdir/program.oc" --emit-obj -o "$workdir/program.o"
+readelf -h "$workdir/program.o" | grep -q 'Type:.*REL'
+cc "$workdir/program.o" -o "$workdir/program"
+
+status=0
+"$workdir/program" || status=$?
+test "$status" -eq 42
