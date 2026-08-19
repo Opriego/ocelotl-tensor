@@ -215,6 +215,62 @@ if(BUILD_TESTING)
         ocelotl_tests
     )
 
+    find_program(
+        LLVM_READOBJ_EXECUTABLE
+        NAMES llvm-readobj
+    )
+
+    if(LLVM_READOBJ_EXECUTABLE)
+        add_test(
+            NAME CrossTarget.X86AndAArch64ELF
+            COMMAND
+                ${CMAKE_COMMAND}
+                -DCOMPILER=$<TARGET_FILE:ocelotlc>
+                -DLLVM_READOBJ=${LLVM_READOBJ_EXECUTABLE}
+                -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/examples/optimization.oc
+                -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/cross-target-tests
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/codegen/CrossTargetGenerationTest.cmake
+        )
+    else()
+        message(STATUS
+            "llvm-readobj not found: external ELF inspection test disabled"
+        )
+    endif()
+
+    find_program(
+        AARCH64_C_COMPILER
+        NAMES aarch64-linux-gnu-gcc
+    )
+    find_program(
+        QEMU_AARCH64_EXECUTABLE
+        NAMES qemu-aarch64 qemu-aarch64-static
+    )
+
+    if(AARCH64_C_COMPILER AND QEMU_AARCH64_EXECUTABLE)
+        set(AARCH64_RUNTIME_SYSROOT "")
+        if(EXISTS /usr/aarch64-linux-gnu)
+            set(AARCH64_RUNTIME_SYSROOT /usr/aarch64-linux-gnu)
+        endif()
+
+        add_test(
+            NAME CrossTarget.AArch64LinkAndRun
+            COMMAND
+                ${CMAKE_COMMAND}
+                -DCOMPILER=$<TARGET_FILE:ocelotlc>
+                -DAARCH64_CC=${AARCH64_C_COMPILER}
+                -DQEMU_AARCH64=${QEMU_AARCH64_EXECUTABLE}
+                -DAARCH64_SYSROOT=${AARCH64_RUNTIME_SYSROOT}
+                -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/examples/optimization.oc
+                -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/aarch64-runtime-test
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/codegen/AArch64RuntimeTest.cmake
+        )
+    else()
+        message(STATUS
+            "AArch64 cross compiler and/or qemu-aarch64 not found: "
+            "optional AArch64 link/execution test disabled"
+        )
+    endif()
+
     if(UNIX)
         add_test(
             NAME NativeExecution.TrueBranch

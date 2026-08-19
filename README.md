@@ -338,6 +338,29 @@ ocelotlc example.oc --emit-obj \
 
 Available targets depend on the LLVM installation used to build Ocelotl.
 
+### Cross-target compilation
+
+On an x86-64 Linux host, an LLVM build containing the AArch64 backend can emit
+AArch64 assembly and relocatable ELF objects directly:
+
+```bash
+ocelotlc foo.oc \
+    --target=aarch64-linux-gnu \
+    --cpu=generic \
+    --emit-obj \
+    -O2 \
+    -o foo.o
+
+llvm-readelf -h foo.o
+```
+
+This cross-compiles a program produced **by** `ocelotlc`; it does not
+cross-compile the `ocelotlc` executable itself. LLVM object emission also does
+not imply that an AArch64 linker, sysroot, C runtime, dynamic loader, or QEMU is
+installed. See [Cross-compilation model](docs/cross-compilation.md) for the
+build/host/target terminology, optional link/runtime steps, target defaults,
+and requirements for cross-building the compiler itself.
+
 ### Current backend limitation
 
 Tensor operations are represented by the frontend and Ocelotl IR, but LLVM lowering for:
@@ -476,6 +499,11 @@ The GoogleTest suite covers multiple compiler layers, including:
   CFG simplification
 * semantic equivalence at `-O0`, `-O1`, `-O2`, and `-O3`
 * native linked execution and exit-value checks
+* explicit X86-64 and AArch64 assembly/object generation
+* target triple normalization and target-specific `DataLayout`
+* ELF `EM_X86_64` and `EM_AARCH64` inspection through LLVM APIs and
+  `llvm-readobj`
+* optional AArch64 cross-link and QEMU execution when their tools are detected
 * target triple and data-layout configuration
 * host assembly emission
 * relocatable host object emission and architecture validation
@@ -509,6 +537,10 @@ Clang / Release
 ```
 
 The CI pipeline configures the project with CMake and Ninja and runs the compiler test suite for every supported matrix combination.
+
+A separate cross-target job builds `ocelotlc` on an x86-64 runner, verifies
+X86-64 and AArch64 ELF objects, then uses the optional GNU AArch64 toolchain and
+QEMU user-mode runtime to link and execute the AArch64 result.
 
 ---
 

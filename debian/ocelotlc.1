@@ -80,13 +80,17 @@ or
 suffix.
 .TP
 .BI --target= triple
-Select the LLVM target triple. The default is the host target.
+Select and normalize the LLVM target triple. The default is the host target.
 .TP
 .BI --cpu= cpu
 Select the target CPU.
 .TP
 .BI --features= feature-string
 Select the comma-separated LLVM target feature string.
+.PP
+Target object generation does not provide a cross linker, sysroot, target C
+runtime, dynamic loader, or emulator. Those are separate optional components
+needed only to link or execute the generated target object.
 .SH EXAMPLES
 Display the tokens generated from an Ocelotl source file:
 .PP
@@ -111,6 +115,16 @@ Generate target assembly and a relocatable object:
 .RS
 ocelotlc program.oc --emit-asm -O2 -o program.s
 ocelotlc program.oc --emit-obj -O2 -o program.o
+.RE
+.fi
+
+Generate and inspect an AArch64 relocatable object:
+.PP
+.nf
+.RS
+ocelotlc program.oc --target=aarch64-linux-gnu --cpu=generic \
+    --emit-obj -O2 -o program-aarch64.o
+llvm-readelf -h program-aarch64.o
 .RE
 .fi
 .SH AUTHOR

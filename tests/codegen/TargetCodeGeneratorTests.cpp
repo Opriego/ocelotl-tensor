@@ -12,8 +12,10 @@
 #include <llvm/Object/ObjectFile.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/TargetParser/Host.h>
+#include <llvm/TargetParser/Triple.h>
 
 #include <filesystem>
+#include <fstream>
 #include <memory>
 #include <string>
 
@@ -111,4 +113,70 @@ TEST(TargetCodeGeneratorTest, ReportsModuleVerificationFailure) {
     EXPECT_NE(std::string{error.what()}.find("invalid LLVM module"),
               std::string::npos);
   }
+}
+
+TEST(TargetCodeGeneratorTest, NormalizesExplicitTargetTriple) {
+  TargetCodeGenerator generator{
+      TargetConfiguration{"aarch64-linux-gnu", "generic", ""}};
+  EXPECT_EQ(generator.configuration().triple,
+            "aarch64-unknown-linux-gnu");
+}
+
+TEST(TargetCodeGeneratorTest, EmitsExplicitX86LinuxELFObject) {
+  llvm::LLVMContext context;
+  auto module = makeValidModule(context);
+  TargetCodeGenerator generator{
+      TargetConfiguration{"x86_64-unknown-linux-gnu", "generic", ""}};
+  const auto path = temporaryPath("x86.o");
+
+  ASSERT_NO_THROW(
+      generator.emit(*module, NativeOutputKind::Object, path.string()));
+  auto binaryOrError = llvm::object::createBinary(path.string());
+  ASSERT_TRUE(static_cast<bool>(binaryOrError));
+  const auto* object = llvm::dyn_cast<llvm::object::ObjectFile>(
+      binaryOrError->getBinary());
+  ASSERT_NE(object, nullptr);
+  EXPECT_TRUE(object->isELF());
+  EXPECT_TRUE(object->isRelocatableObject());
+  EXPECT_EQ(object->getArch(), llvm::Triple::x86_64);
+  std::filesystem::remove(path);
+}
+
+TEST(TargetCodeGeneratorTest, EmitsAArch64LinuxAssemblyAndELFObject) {
+  llvm::LLVMContext context;
+  auto assemblyModule = makeValidModule(context);
+  auto objectModule = makeValidModule(context);
+  std::unique_ptr<TargetCodeGenerator> generator;
+  try {
+    generator = std::make_unique<TargetCodeGenerator>(
+        TargetConfiguration{"aarch64-unknown-linux-gnu", "generic", ""});
+  } catch (const std::runtime_error& error) {
+    GTEST_SKIP() << "installed LLVM has no AArch64 backend: " << error.what();
+  }
+
+  const auto assemblyPath = temporaryPath("aarch64.s");
+  const auto objectPath = temporaryPath("aarch64.o");
+  ASSERT_NO_THROW(generator->emit(
+      *assemblyModule, NativeOutputKind::Assembly, assemblyPath.string()));
+  ASSERT_NO_THROW(generator->emit(
+      *objectModule, NativeOutputKind::Object, objectPath.string()));
+
+  EXPECT_GT(std::filesystem::file_size(assemblyPath), 0U);
+  std::ifstream assembly{assemblyPath};
+  const std::string assemblyText{
+      std::istreambuf_iterator<char>{assembly},
+      std::istreambuf_iterator<char>{}};
+  EXPECT_NE(assemblyText.find("ret"), std::string::npos);
+
+  auto binaryOrError = llvm::object::createBinary(objectPath.string());
+  ASSERT_TRUE(static_cast<bool>(binaryOrError));
+  const auto* object = llvm::dyn_cast<llvm::object::ObjectFile>(
+      binaryOrError->getBinary());
+  ASSERT_NE(object, nullptr);
+  EXPECT_TRUE(object->isELF());
+  EXPECT_TRUE(object->isRelocatableObject());
+  EXPECT_EQ(object->getArch(), llvm::Triple::aarch64);
+
+  std::filesystem::remove(assemblyPath);
+  std::filesystem::remove(objectPath);
 }

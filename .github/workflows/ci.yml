@@ -79,3 +79,44 @@ jobs:
           ctest \
             --test-dir build \
             --output-on-failure
+
+  cross-target:
+    name: x86-64 host / AArch64 target
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install native and AArch64 test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            ninja-build \
+            libgtest-dev \
+            llvm-dev \
+            g++ \
+            gcc-aarch64-linux-gnu \
+            qemu-user
+
+      - name: Configure
+        run: |
+          cmake \
+            -S . \
+            -B build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_CXX_COMPILER=g++
+
+      - name: Build
+        run: |
+          cmake --build build --parallel
+
+      - name: Generate, inspect, link, and execute cross-target artifacts
+        run: |
+          ctest \
+            --test-dir build \
+            --output-on-failure \
+            -R '^CrossTarget\.'

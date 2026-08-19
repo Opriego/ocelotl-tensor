@@ -10,6 +10,7 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/TargetParser/Host.h>
+#include <llvm/TargetParser/Triple.h>
 
 #include <mutex>
 #include <stdexcept>
@@ -38,6 +39,8 @@ TargetCodeGenerator::TargetCodeGenerator(TargetConfiguration configuration)
 
   if (configuration_.triple.empty()) {
     configuration_.triple = llvm::sys::getDefaultTargetTriple();
+  } else {
+    configuration_.triple = llvm::Triple::normalize(configuration_.triple);
   }
 
   std::string lookupError;
