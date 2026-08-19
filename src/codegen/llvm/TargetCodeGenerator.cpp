@@ -1,5 +1,13 @@
 #include "ocelotl/codegen/llvm/TargetCodeGenerator.hpp"
 
+#include <llvm/Config/llvm-config.h>
+#if LLVM_VERSION_MAJOR >= 16
+#include <llvm/TargetParser/Host.h>
+#include <llvm/TargetParser/Triple.h>
+#else
+#include <llvm/ADT/Triple.h>
+#include <llvm/Support/Host.h>
+#endif
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Verifier.h>
@@ -9,8 +17,6 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
-#include <llvm/TargetParser/Host.h>
-#include <llvm/TargetParser/Triple.h>
 
 #include <mutex>
 #include <stdexcept>
@@ -55,7 +61,13 @@ TargetCodeGenerator::TargetCodeGenerator(TargetConfiguration configuration)
   llvm::TargetOptions options;
   targetMachine_.reset(target->createTargetMachine(
       configuration_.triple, configuration_.cpu, configuration_.features,
-      options, std::nullopt));
+      options,
+#if LLVM_VERSION_MAJOR >= 16
+      std::nullopt
+#else
+      llvm::None
+#endif
+      ));
 
   if (targetMachine_ == nullptr) {
     throw std::runtime_error{"unable to create target machine for '" +
@@ -104,9 +116,15 @@ void TargetCodeGenerator::emit(llvm::Module &module,
 
   llvm::legacy::PassManager passManager;
   const llvm::CodeGenFileType fileType =
+#if LLVM_VERSION_MAJOR >= 18
       outputKind == NativeOutputKind::Assembly
           ? llvm::CodeGenFileType::AssemblyFile
           : llvm::CodeGenFileType::ObjectFile;
+#else
+      outputKind == NativeOutputKind::Assembly
+          ? llvm::CGFT_AssemblyFile
+          : llvm::CGFT_ObjectFile;
+#endif
 
   if (targetMachine_->addPassesToEmitFile(passManager, output, nullptr,
                                           fileType, false)) {

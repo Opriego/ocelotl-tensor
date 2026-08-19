@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <llvm/ADT/SmallString.h>
+#include <llvm/Config/llvm-config.h>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
@@ -11,8 +12,13 @@
 #include <llvm/Object/Binary.h>
 #include <llvm/Object/ObjectFile.h>
 #include <llvm/Support/FileSystem.h>
+#if LLVM_VERSION_MAJOR >= 16
 #include <llvm/TargetParser/Host.h>
 #include <llvm/TargetParser/Triple.h>
+#else
+#include <llvm/ADT/Triple.h>
+#include <llvm/Support/Host.h>
+#endif
 
 #include <filesystem>
 #include <fstream>
