@@ -13,3 +13,6 @@ debian/*.substvars
 debian/ocelotlc/
 
 
+
+# IDE-specific files
+*.user
