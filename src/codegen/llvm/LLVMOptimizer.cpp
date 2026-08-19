@@ -48,6 +48,12 @@ void LLVMOptimizer::optimize(
 {
     verify(module, "before");
 
+    // Ocelotl defines O0 as preserving the generated LLVM IR without running
+    // transformation passes. Verify the module, then leave it unchanged.
+    if (level == OptimizationLevel::O0) {
+        return;
+    }
+
     llvm::LoopAnalysisManager loopAnalyses;
     llvm::FunctionAnalysisManager functionAnalyses;
     llvm::CGSCCAnalysisManager cgsccAnalyses;

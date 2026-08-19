@@ -209,7 +209,12 @@ std::unique_ptr<llvm::Module> LLVMCodeGenerator::generate(const ir::Module& modu
                 } else if constexpr (std::is_same_v<Op, ir::PhiOp>) {
                     llvm::Type* type = lowerType(context_, op.type);
                     if (type == nullptr) throw std::runtime_error{"unsupported phi type"};
-                    auto* phi = builder.CreatePHI(type, op.incoming.size(), "merge");
+                    if (op.incoming.size() >
+                        std::numeric_limits<unsigned>::max()) {
+                        throw std::runtime_error{"too many phi operands for LLVM"};
+                    }
+                    auto* phi = builder.CreatePHI(
+                        type, static_cast<unsigned>(op.incoming.size()), "merge");
                     values.emplace(op.result, phi);
                     for (const auto& incoming : op.incoming) {
                         phi->addIncoming(values.at(incoming.value),
