@@ -135,7 +135,7 @@ tensor B: f32[512,256]
 C = matmul(A, B)
 D = relu(C)
 
-return D
+return 0
 ```
 
 produces an IR model equivalent to:
@@ -145,7 +145,8 @@ produces an IR model equivalent to:
 %1 = tensor.decl B : f32[512,256]
 %2 = matmul %0, %1 : f32[1024,256]
 %3 = relu %2 : f32[1024,256]
-return %3
+%4 = constant 0 : i64
+return %4
 ```
 
 The IR verifier rejects missing terminators, invalid branch targets, nonexistent
@@ -204,7 +205,7 @@ if.end:
 LLVM IR:
 
 ```llvm
-define i64 @main() {
+define i32 @main() {
 entry:
   %cmp = icmp sgt i64 12, 10
   br i1 %cmp, label %if.then, label %if.else
@@ -216,7 +217,8 @@ if.else:
   br label %if.end
 if.end:
   %merge = phi i64 [ %add, %if.then ], [ %sub, %if.else ]
-  ret i64 %merge
+  %status = trunc i64 %merge to i32
+  ret i32 %status
 }
 ```
 
@@ -245,6 +247,11 @@ src/codegen/llvm/
 ```
 
 The current backend supports scalar CFG programs.
+
+A current source unit is a hosted executable program. Ocelotl integers remain
+scalar `i64`, and every top-level `return` must produce that type. The hosted
+LLVM entry point is always `i32 @main()`; lowering preserves the low 32 bits of
+the Ocelotl status with an explicit `i64`-to-`i32` truncation.
 
 It currently lowers:
 
@@ -321,9 +328,9 @@ comparison, conditional branches, and a phi node. At `-O1` and above LLVM folds
 the constants, removes the dead/redundant operations, and simplifies the CFG to:
 
 ```llvm
-define noundef i64 @main() local_unnamed_addr {
+define noundef i32 @main() local_unnamed_addr {
 entry:
-  ret i64 13
+  ret i32 13
 }
 ```
 
