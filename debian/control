@@ -18,4 +18,5 @@ Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Ocelotl tensor compiler
  Ocelotl is an experimental compiler implemented in modern C++.
  It provides lexical and syntactic analysis, semantic analysis,
- an SSA-inspired intermediate representation, and LLVM IR generation.
+ an SSA-inspired intermediate representation, LLVM IR generation,
+ target assembly generation, and relocatable object-file emission.

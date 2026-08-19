@@ -1,6 +1,6 @@
 .TH OCELOTLC 1 "August 2026" "Ocelotl Tensor Compiler 0.1.0" "User Commands"
 .SH NAME
-ocelotlc \- experimental compiler with LLVM IR generation
+ocelotlc \- experimental LLVM-based native compiler
 .SH SYNOPSIS
 .B ocelotlc
 .I source-file
@@ -9,6 +9,33 @@ ocelotlc \- experimental compiler with LLVM IR generation
 .B ocelotlc
 .I source-file
 .B --emit-llvm
+[
+.BR -O0 | -O1 | -O2 | -O3
+]
+[
+.B -o
+.I output
+]
+
+.B ocelotlc
+.I source-file
+.BR --emit-asm | --emit-obj
+[
+.BR -O0 | -O1 | -O2 | -O3
+]
+[
+.B -o
+.I output
+]
+[
+.BI --target= triple
+]
+[
+.BI --cpu= cpu
+]
+[
+.BI --features= feature-string
+]
 .SH DESCRIPTION
 .B ocelotlc
 is the command-line compiler for the Ocelotl Tensor Compiler project.
@@ -19,7 +46,8 @@ semantic analysis, an SSA-inspired intermediate representation,
 and LLVM IR generation.
 
 The compiler currently supports inspection of lexical tokens and
-generation of LLVM intermediate representation for supported programs.
+generation of LLVM intermediate representation, target assembly, and
+relocatable object files for supported programs.
 .SH OPTIONS
 .TP
 .B --emit-tokens
@@ -28,7 +56,37 @@ Tokenize the input source file and print the resulting token stream.
 .B --emit-llvm
 Compile the input through the Ocelotl frontend, semantic analyzer,
 Ocelotl intermediate representation, and LLVM backend, then print
-the generated LLVM IR.
+the LLVM IR after the selected optimization pipeline.
+.TP
+.B --emit-llvm-before-opt
+Emit verified LLVM IR immediately after lowering and before optimization.
+.TP
+.BR -O0 , " " -O1 , " " -O2 , " " -O3
+Select LLVM's standard optimization pipeline. The default is
+.BR -O0 .
+.TP
+.B --emit-asm
+Compile the input and emit target assembly.
+.TP
+.B --emit-obj
+Compile the input and emit a relocatable object file.
+.TP
+.BI -o " path"
+Write output to the specified path. LLVM IR and tokens default to standard
+output. Assembly and object files default to the source basename with a
+.B .s
+or
+.B .o
+suffix.
+.TP
+.BI --target= triple
+Select the LLVM target triple. The default is the host target.
+.TP
+.BI --cpu= cpu
+Select the target CPU.
+.TP
+.BI --features= feature-string
+Select the comma-separated LLVM target feature string.
 .SH EXAMPLES
 Display the tokens generated from an Ocelotl source file:
 .PP
@@ -42,7 +100,17 @@ Generate LLVM IR:
 .PP
 .nf
 .RS
-ocelotlc program.oc --emit-llvm
+ocelotlc program.oc --emit-llvm-before-opt -O2 -o before.ll
+ocelotlc program.oc --emit-llvm -O2 -o after.ll
+.RE
+.fi
+
+Generate target assembly and a relocatable object:
+.PP
+.nf
+.RS
+ocelotlc program.oc --emit-asm -O2 -o program.s
+ocelotlc program.oc --emit-obj -O2 -o program.o
 .RE
 .fi
 .SH AUTHOR

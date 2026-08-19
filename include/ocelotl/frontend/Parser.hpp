@@ -36,10 +36,27 @@ private:
     ast::ReturnStmt parseReturnStatement();
 
     [[nodiscard]]
+    std::shared_ptr<ast::IfStmt> parseIfStatement();
+
+    [[nodiscard]]
+    std::vector<ast::Statement> parseBlock();
+
+    [[nodiscard]]
     ast::TensorType parseTensorType();
 
     [[nodiscard]]
     ast::Expression parseExpression();
+
+    [[nodiscard]] ast::Expression parseComparison();
+    [[nodiscard]] ast::Expression parseAdditive();
+    [[nodiscard]] ast::Expression parseMultiplicative();
+    [[nodiscard]] ast::Expression parsePrimary();
+
+    [[nodiscard]] ast::Expression makeBinary(
+        ast::Expression lhs,
+        const Token& operatorToken,
+        ast::Expression rhs
+    );
 
     [[nodiscard]]
     ast::Expression parseIdentifierOrCall();

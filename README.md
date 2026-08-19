@@ -1,6 +1,6 @@
 # Ocelotl Tensor Compiler
 
-Ocelotl is an experimental compiler written in modern C++20 for exploring end-to-end compiler engineering, from source-language analysis to LLVM IR generation.
+Ocelotl is an experimental compiler written in modern C++20 for exploring end-to-end compiler engineering, from source-language analysis to native object generation.
 
 The project currently implements a compiler frontend, semantic analysis, a custom SSA-inspired intermediate representation, an LLVM backend for scalar programs, automated testing, CI across GCC and Clang, and Debian packaging.
 
@@ -43,7 +43,15 @@ Semantic Analysis
  LLVM Verifier
       |
       v
-   LLVM IR
+LLVM New Pass Manager
+  -O0 / -O1 / -O2 / -O3
+      |
+      v
+LLVM TargetMachine
+      |
+      +----> LLVM IR
+      +----> assembly
+      +----> relocatable object
 ```
 
 The compiler deliberately keeps the frontend and semantic model independent from LLVM-specific implementation details.
@@ -96,7 +104,10 @@ Conceptually:
 
 ## Ocelotl IR
 
-Ocelotl uses a custom SSA-inspired intermediate representation between semantic analysis and LLVM lowering.
+Ocelotl uses a typed SSA intermediate representation between semantic analysis
+and LLVM lowering. A module contains explicit basic blocks; each block contains
+operations followed by exactly one branch, conditional branch, or return
+terminator. Branch joins use phi nodes.
 
 Example source:
 
@@ -105,11 +116,12 @@ X = 42
 return X
 ```
 
-is represented conceptually as:
+is represented conceptually as one entry block:
 
 ```text
-%0 = constant 42
-return %0
+entry:
+  %0 = constant 42 : i64
+  return %0
 ```
 
 Tensor programs are also represented in Ocelotl IR.
@@ -136,7 +148,91 @@ produces an IR model equivalent to:
 return %3
 ```
 
+The IR verifier rejects missing terminators, invalid branch targets, nonexistent
+SSA values, same-block use-before-definition, malformed phi predecessors, phi
+type mismatches, and inconsistent return types. Full dominance analysis is not
+yet implemented.
+
 The custom IR is intentionally separate from LLVM IR so compiler analysis and tensor-specific transformations can evolve independently from the backend.
+
+### Control flow through every layer
+
+Source ([examples/control_flow.oc](examples/control_flow.oc)):
+
+```text
+X = 12
+if X > 10 {
+    Y = X + 1
+} else {
+    Y = X - 1
+}
+return Y
+```
+
+Conceptual AST:
+
+```text
+Program
+├── Assign X = Integer(12)
+├── If Binary(Greater, X, 10)
+│   ├── then: Assign Y = Binary(Add, X, 1)
+│   └── else: Assign Y = Binary(Subtract, X, 1)
+└── Return Y
+```
+
+Custom IR:
+
+```text
+entry:
+  %0 = constant 12 : i64
+  %1 = constant 10 : i64
+  %2 = compare greater %0, %1
+  cond_br %2, if.then, if.else
+if.then:
+  %3 = constant 1 : i64
+  %4 = add %0, %3 : i64
+  br if.end
+if.else:
+  %5 = constant 1 : i64
+  %6 = subtract %0, %5 : i64
+  br if.end
+if.end:
+  %7 = phi i64 [if.then: %4], [if.else: %6]
+  return %7
+```
+
+LLVM IR:
+
+```llvm
+define i64 @main() {
+entry:
+  %cmp = icmp sgt i64 12, 10
+  br i1 %cmp, label %if.then, label %if.else
+if.then:
+  %add = add i64 12, 1
+  br label %if.end
+if.else:
+  %sub = sub i64 12, 1
+  br label %if.end
+if.end:
+  %merge = phi i64 [ %add, %if.then ], [ %sub, %if.else ]
+  ret i64 %merge
+}
+```
+
+Representative x86-64 assembly from LLVM's target backend:
+
+```asm
+main:
+  xorl  %eax, %eax
+  testb %al, %al
+  jne   .LBB0_2
+  movl  $13, %eax
+  retq
+.LBB0_2:
+  movl  $11, %eax
+  retq
+```
 
 ---
 
@@ -148,14 +244,17 @@ Ocelotl contains a native LLVM-based code-generation layer under:
 src/codegen/llvm/
 ```
 
-The current backend milestone supports scalar constant programs.
+The current backend supports scalar CFG programs.
 
 It currently lowers:
 
 * integer constants to LLVM `i64`
 * floating-point constants to LLVM `double`
-* return operations
-* Ocelotl SSA-like value IDs to `llvm::Value*`
+* integer and floating-point arithmetic
+* integer and floating-point comparisons
+* basic blocks and conditional/unconditional branches
+* Ocelotl SSA values and phi nodes
+* return terminators
 
 The generated module is checked with:
 
@@ -163,7 +262,10 @@ The generated module is checked with:
 llvm::verifyModule(...)
 ```
 
-before being returned to the caller.
+before being returned to the caller. It then runs LLVM's standard per-module
+optimization pipeline through the New Pass Manager. Native emission finally
+selects a target, assigns the target triple and target-provided `DataLayout`,
+verifies again, and runs LLVM's target code-emission pipeline.
 
 For example:
 
@@ -172,13 +274,69 @@ X = 42
 return X
 ```
 
-can be compiled with:
+can be compiled to LLVM IR, assembly, or a relocatable object with:
 
 ```bash
-./build/ocelotlc examples/return42.oc --emit-llvm
+ocelotlc example.oc --emit-llvm -O2 -o example.ll
+ocelotlc example.oc --emit-asm -O2 -o example.s
+ocelotlc example.oc --emit-obj -O2 -o example.o
 ```
 
-and produces LLVM IR containing a generated `main` function returning the scalar value.
+The native pipeline is:
+
+```text
+frontend -> Ocelotl IR -> LLVM IR -> LLVM optimization
+         -> LLVM TargetMachine -> assembly/object
+```
+
+### Optimization layers
+
+The compiler keeps three optimization domains distinct:
+
+1. **Ocelotl IR optimization** would operate on Ocelotl-specific typed SSA and
+   CFG operations. No Ocelotl optimization passes exist yet; the verified IR is
+   currently lowered unchanged.
+2. **LLVM IR optimization** uses `llvm::PassBuilder` and LLVM's standard
+   per-module `-O0` through `-O3` pipelines. Ocelotl does not recreate or curate
+   those pipelines manually.
+3. **Target-machine optimization** happens during LLVM instruction selection,
+   scheduling, register allocation, and assembly/object emission for the
+   selected target.
+
+The LLVM optimizer registers `LoopAnalysisManager`, `FunctionAnalysisManager`,
+`CGSCCAnalysisManager`, and `ModuleAnalysisManager`, then cross-registers their
+proxies before running the selected standard pipeline. The LLVM module is
+verified immediately before and after optimization.
+
+The optimization example can be inspected on both sides of the boundary:
+
+```bash
+ocelotlc examples/optimization.oc --emit-llvm-before-opt -O2 -o before.ll
+ocelotlc examples/optimization.oc --emit-llvm -O2 -o after.ll
+```
+
+Before optimization, the function contains dead arithmetic, `add 0`, a constant
+comparison, conditional branches, and a phi node. At `-O1` and above LLVM folds
+the constants, removes the dead/redundant operations, and simplifies the CFG to:
+
+```llvm
+define noundef i64 @main() local_unnamed_addr {
+entry:
+  ret i64 13
+}
+```
+
+The target defaults to the host. Cross-target configuration is explicit:
+
+```bash
+ocelotlc example.oc --emit-obj \
+    --target=aarch64-unknown-linux-gnu \
+    --cpu=generic \
+    --features=+neon \
+    -o example-aarch64.o
+```
+
+Available targets depend on the LLVM installation used to build Ocelotl.
 
 ### Current backend limitation
 
@@ -213,6 +371,27 @@ and:
 ```bash
 ocelotlc <source-file> --emit-llvm
 ```
+
+```bash
+ocelotlc <source-file> --emit-llvm-before-opt
+```
+
+```bash
+ocelotlc <source-file> --emit-asm
+ocelotlc <source-file> --emit-obj
+```
+
+`--emit-tokens` and `--emit-llvm` continue to write to standard output when
+`-o` is omitted. Assembly and object modes default to the input basename with
+`.s` and `.o`, respectively. All modes accept `-o <path>`.
+
+Native emission accepts `--target=<triple>`, `--cpu=<cpu>`, and
+`--features=<feature-string>`.
+
+All LLVM and native emission modes accept `-O0`, `-O1`, `-O2`, or `-O3`.
+The default is `-O0`. `--emit-llvm-before-opt` always shows the verified output
+of LLVM lowering before the selected optimization pipeline; `--emit-llvm`
+shows the post-optimization module.
 
 Example:
 
@@ -286,8 +465,22 @@ The GoogleTest suite covers multiple compiler layers, including:
 * type inference
 * tensor shape inference
 * Ocelotl IR generation
+* custom IR structural and SSA verification
+* arithmetic and comparison semantics
+* true, false, and nested conditional paths
+* CFG construction and phi generation
 * LLVM IR generation
 * LLVM module validity
+* LLVM New Pass Manager analysis registration and standard pipelines
+* constant folding, dead-code elimination, redundant-operation removal, and
+  CFG simplification
+* semantic equivalence at `-O0`, `-O1`, `-O2`, and `-O3`
+* native linked execution and exit-value checks
+* target triple and data-layout configuration
+* host assembly emission
+* relocatable host object emission and architecture validation
+* invalid target diagnostics
+* pre-emission LLVM module verification diagnostics
 * unsupported backend operations
 
 LLVM code-generation tests exercise the full path:
@@ -477,6 +670,3 @@ The repository may be used, studied, modified, and redistributed for uses permit
 Commercial use requires a separate license from the copyright holder.
 
 Copyright © 2026 Oscar Priego.
-
-
-

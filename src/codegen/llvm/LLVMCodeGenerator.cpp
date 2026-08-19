@@ -1,8 +1,11 @@
 #include "ocelotl/codegen/llvm/LLVMCodeGenerator.hpp"
 
+#include "ocelotl/ir/IRVerifier.hpp"
+
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/NoFolder.h>
 #include <llvm/IR/Type.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/raw_ostream.h>
@@ -13,261 +16,175 @@
 #include <variant>
 
 namespace ocelotl::codegen {
+namespace {
+
+llvm::Type* lowerType(llvm::LLVMContext& context, const sema::TensorType& type)
+{
+    if (!type.shape.empty()) return nullptr;
+    if (type.elementType == "i1") return llvm::Type::getInt1Ty(context);
+    if (type.elementType == "i64") return llvm::Type::getInt64Ty(context);
+    if (type.elementType == "f64") return llvm::Type::getDoubleTy(context);
+    return nullptr;
+}
+
+} // namespace
 
 LLVMCodeGenerator::LLVMCodeGenerator() = default;
 
-std::unique_ptr<llvm::Module>
-LLVMCodeGenerator::generate(
-    const ir::Module& module
-)
+std::unique_ptr<llvm::Module> LLVMCodeGenerator::generate(const ir::Module& module)
 {
-    auto llvmModule =
-        std::make_unique<llvm::Module>(
-            "ocelotl_module",
-            context_
-        );
+    ir::IRVerifier{}.verify(module);
 
-    llvm::IRBuilder<> builder{context_};
+    auto llvmModule = std::make_unique<llvm::Module>("ocelotl_module", context_);
 
-    /*
-     * Current milestone:
-     *
-     * Every Ocelotl source program is lowered into a single
-     * LLVM function named "main".
-     *
-     * We determine its return type from the ReturnOp operand.
-     */
-
-    const ir::ReturnOp* returnOperation = nullptr;
-
-    for (const auto& operation : module.operations) {
-        if (const auto* returnOp =
-                std::get_if<ir::ReturnOp>(&operation)) {
-
-            returnOperation = returnOp;
+    const sema::TensorType* returnType = nullptr;
+    std::unordered_map<ir::ValueId, const sema::TensorType*> valueTypes;
+    for (const auto& block : module.blocks) {
+        for (const auto& operation : block.operations) {
+            valueTypes.emplace(ir::resultOf(operation), &ir::typeOf(operation));
+        }
+    }
+    for (const auto& block : module.blocks) {
+        if (const auto* returnOp = std::get_if<ir::ReturnOp>(&*block.terminator)) {
+            returnType = valueTypes.at(returnOp->value);
+            break;
         }
     }
 
-    if (returnOperation == nullptr) {
-        throw std::runtime_error{
-            "LLVM code generation requires a return operation"
-        };
+    llvm::Type* llvmReturnType =
+        returnType == nullptr ? nullptr : lowerType(context_, *returnType);
+    if (llvmReturnType == nullptr) {
+        throw std::runtime_error{"LLVM code generation does not support return type"};
     }
 
-    /*
-     * First determine the LLVM type of the returned IR value.
-     */
-    llvm::Type* returnType = nullptr;
+    auto* function = llvm::Function::Create(
+        llvm::FunctionType::get(llvmReturnType, false),
+        llvm::Function::ExternalLinkage,
+        "main",
+        llvmModule.get()
+    );
 
-    for (const auto& operation : module.operations) {
-        if (const auto* integer =
-                std::get_if<ir::ConstantIntOp>(
-                    &operation
-                )) {
+    std::unordered_map<ir::BlockId, llvm::BasicBlock*> blocks;
+    for (const auto& block : module.blocks) {
+        blocks.emplace(
+            block.id,
+            llvm::BasicBlock::Create(context_, block.name, function)
+        );
+    }
 
-            if (integer->result ==
-                returnOperation->value) {
+    llvm::IRBuilder<llvm::NoFolder> builder{context_};
+    std::unordered_map<ir::ValueId, llvm::Value*> values;
 
-                returnType =
-                    llvm::Type::getInt64Ty(
-                        context_
-                    );
+    for (const auto& block : module.blocks) {
+        builder.SetInsertPoint(blocks.at(block.id));
 
-                break;
+        for (const auto& operation : block.operations) {
+            std::visit([&](const auto& op) {
+                using Op = std::decay_t<decltype(op)>;
+                if constexpr (std::is_same_v<Op, ir::ConstantIntOp>) {
+                    values.emplace(op.result, llvm::ConstantInt::get(
+                        llvm::Type::getInt64Ty(context_),
+                        static_cast<std::uint64_t>(op.value), true));
+                } else if constexpr (std::is_same_v<Op, ir::ConstantFloatOp>) {
+                    values.emplace(op.result, llvm::ConstantFP::get(
+                        llvm::Type::getDoubleTy(context_), op.value));
+                } else if constexpr (std::is_same_v<Op, ir::BinaryOp>) {
+                    llvm::Value* lhs = values.at(op.lhs);
+                    llvm::Value* rhs = values.at(op.rhs);
+                    const bool floating = op.type.elementType == "f64";
+                    llvm::Value* result = nullptr;
+                    switch (op.kind) {
+                    case ir::BinaryKind::Add:
+                        result = floating ? builder.CreateFAdd(lhs, rhs, "add")
+                                          : builder.CreateAdd(lhs, rhs, "add");
+                        break;
+                    case ir::BinaryKind::Subtract:
+                        result = floating ? builder.CreateFSub(lhs, rhs, "sub")
+                                          : builder.CreateSub(lhs, rhs, "sub");
+                        break;
+                    case ir::BinaryKind::Multiply:
+                        result = floating ? builder.CreateFMul(lhs, rhs, "mul")
+                                          : builder.CreateMul(lhs, rhs, "mul");
+                        break;
+                    case ir::BinaryKind::Divide:
+                        result = floating ? builder.CreateFDiv(lhs, rhs, "div")
+                                          : builder.CreateSDiv(lhs, rhs, "div");
+                        break;
+                    }
+                    values.emplace(op.result, result);
+                } else if constexpr (std::is_same_v<Op, ir::CompareOp>) {
+                    llvm::Value* lhs = values.at(op.lhs);
+                    llvm::Value* rhs = values.at(op.rhs);
+                    const bool floating = op.operandType.elementType == "f64";
+                    llvm::Value* result = nullptr;
+                    if (floating) {
+                        llvm::CmpInst::Predicate predicate;
+                        switch (op.kind) {
+                        case ir::CompareKind::Equal: predicate = llvm::CmpInst::FCMP_OEQ; break;
+                        case ir::CompareKind::NotEqual: predicate = llvm::CmpInst::FCMP_UNE; break;
+                        case ir::CompareKind::Less: predicate = llvm::CmpInst::FCMP_OLT; break;
+                        case ir::CompareKind::LessEqual: predicate = llvm::CmpInst::FCMP_OLE; break;
+                        case ir::CompareKind::Greater: predicate = llvm::CmpInst::FCMP_OGT; break;
+                        case ir::CompareKind::GreaterEqual: predicate = llvm::CmpInst::FCMP_OGE; break;
+                        }
+                        result = builder.CreateFCmp(predicate, lhs, rhs, "cmp");
+                    } else {
+                        llvm::CmpInst::Predicate predicate;
+                        switch (op.kind) {
+                        case ir::CompareKind::Equal: predicate = llvm::CmpInst::ICMP_EQ; break;
+                        case ir::CompareKind::NotEqual: predicate = llvm::CmpInst::ICMP_NE; break;
+                        case ir::CompareKind::Less: predicate = llvm::CmpInst::ICMP_SLT; break;
+                        case ir::CompareKind::LessEqual: predicate = llvm::CmpInst::ICMP_SLE; break;
+                        case ir::CompareKind::Greater: predicate = llvm::CmpInst::ICMP_SGT; break;
+                        case ir::CompareKind::GreaterEqual: predicate = llvm::CmpInst::ICMP_SGE; break;
+                        }
+                        result = builder.CreateICmp(predicate, lhs, rhs, "cmp");
+                    }
+                    values.emplace(op.result, result);
+                } else if constexpr (std::is_same_v<Op, ir::PhiOp>) {
+                    llvm::Type* type = lowerType(context_, op.type);
+                    if (type == nullptr) throw std::runtime_error{"unsupported phi type"};
+                    auto* phi = builder.CreatePHI(type, op.incoming.size(), "merge");
+                    values.emplace(op.result, phi);
+                    for (const auto& incoming : op.incoming) {
+                        phi->addIncoming(values.at(incoming.value),
+                                         blocks.at(incoming.predecessor));
+                    }
+                } else {
+                    throw std::runtime_error{"tensor LLVM lowering is not implemented yet"};
+                }
+            }, operation);
+        }
+
+        std::visit([&](const auto& terminator) {
+            using T = std::decay_t<decltype(terminator)>;
+            if constexpr (std::is_same_v<T, ir::BranchOp>) {
+                builder.CreateBr(blocks.at(terminator.target));
+            } else if constexpr (std::is_same_v<T, ir::CondBranchOp>) {
+                builder.CreateCondBr(values.at(terminator.condition),
+                                     blocks.at(terminator.trueTarget),
+                                     blocks.at(terminator.falseTarget));
+            } else {
+                builder.CreateRet(values.at(terminator.value));
             }
-        }
-
-        if (const auto* floatingPoint =
-                std::get_if<ir::ConstantFloatOp>(
-                    &operation
-                )) {
-
-            if (floatingPoint->result ==
-                returnOperation->value) {
-
-                returnType =
-                    llvm::Type::getDoubleTy(
-                        context_
-                    );
-
-                break;
-            }
-        }
+        }, *block.terminator);
     }
 
-    if (returnType == nullptr) {
-        throw std::runtime_error{
-            "LLVM code generation does not yet support "
-            "the returned Ocelotl IR value type"
-        };
-    }
-
-    auto* functionType =
-        llvm::FunctionType::get(
-            returnType,
-            false
-        );
-
-    auto* function =
-        llvm::Function::Create(
-            functionType,
-            llvm::Function::ExternalLinkage,
-            "main",
-            llvmModule.get()
-        );
-
-    auto* entry =
-        llvm::BasicBlock::Create(
-            context_,
-            "entry",
-            function
-        );
-
-    builder.SetInsertPoint(entry);
-
-    /*
-     * Map Ocelotl SSA-like ValueIds to LLVM Values.
-     */
-    std::unordered_map<
-        ir::ValueId,
-        llvm::Value*
-    > values;
-
-    for (const auto& operation : module.operations) {
-
-        if (const auto* integer =
-                std::get_if<ir::ConstantIntOp>(
-                    &operation
-                )) {
-
-            llvm::Value* value =
-                llvm::ConstantInt::get(
-                    llvm::Type::getInt64Ty(
-                        context_
-                    ),
-                    static_cast<std::uint64_t>(
-                        integer->value
-                    ),
-                    true
-                );
-
-            values.emplace(
-                integer->result,
-                value
-            );
-
-            continue;
-        }
-
-        if (const auto* floatingPoint =
-                std::get_if<ir::ConstantFloatOp>(
-                    &operation
-                )) {
-
-            llvm::Value* value =
-                llvm::ConstantFP::get(
-                    llvm::Type::getDoubleTy(
-                        context_
-                    ),
-                    floatingPoint->value
-                );
-
-            values.emplace(
-                floatingPoint->result,
-                value
-            );
-
-            continue;
-        }
-
-        if (const auto* returnOp =
-                std::get_if<ir::ReturnOp>(
-                    &operation
-                )) {
-
-            const auto iterator =
-                values.find(
-                    returnOp->value
-                );
-
-            if (iterator == values.end()) {
-                throw std::runtime_error{
-                    "LLVM code generation could not resolve "
-                    "the return value"
-                };
-            }
-
-            builder.CreateRet(
-                iterator->second
-            );
-
-            continue;
-        }
-
-        /*
-         * Tensor operations intentionally remain unsupported in
-         * this first backend milestone.
-         */
-        if (
-            std::holds_alternative<
-                ir::TensorDeclOp
-            >(operation) ||
-            std::holds_alternative<
-                ir::MatMulOp
-            >(operation) ||
-            std::holds_alternative<
-                ir::ReluOp
-            >(operation)
-        ) {
-            throw std::runtime_error{
-                "tensor LLVM lowering is not implemented yet"
-            };
-        }
-    }
-
-    /*
-     * LLVM itself verifies structural correctness of the generated
-     * module before we return it.
-     */
     std::string verificationError;
-    llvm::raw_string_ostream errorStream{
-        verificationError
-    };
-
-    if (llvm::verifyModule(
-            *llvmModule,
-            &errorStream
-        )) {
-
+    llvm::raw_string_ostream errorStream{verificationError};
+    if (llvm::verifyModule(*llvmModule, &errorStream)) {
         errorStream.flush();
-
-        throw std::runtime_error{
-            "generated invalid LLVM IR: "
-            + verificationError
-        };
+        throw std::runtime_error{"generated invalid LLVM IR: " + verificationError};
     }
-
     return llvmModule;
 }
 
-std::string
-LLVMCodeGenerator::emitToString(
-    const llvm::Module& module
-) const
+std::string LLVMCodeGenerator::emitToString(const llvm::Module& module) const
 {
     std::string output;
-
-    llvm::raw_string_ostream stream{
-        output
-    };
-
-    module.print(
-        stream,
-        nullptr
-    );
-
+    llvm::raw_string_ostream stream{output};
+    module.print(stream, nullptr);
     stream.flush();
-
     return output;
 }
 

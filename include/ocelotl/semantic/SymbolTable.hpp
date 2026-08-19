@@ -22,6 +22,9 @@ public:
     [[nodiscard]]
     std::size_t size() const noexcept;
 
+    [[nodiscard]]
+    const std::unordered_map<std::string, Symbol>& entries() const noexcept;
+
 private:
     std::unordered_map<std::string, Symbol> symbols_;
 };

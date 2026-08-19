@@ -32,6 +32,19 @@ llvm_map_components_to_libnames(
     LLVM_LIBS
     Core
     Support
+
+    # TargetMachine and its target-independent emission pipeline.
+    Target
+    MC
+    CodeGen
+
+    # LLVM New Pass Manager and standard optimization pipelines.
+    Passes
+
+    # Assembly printers and every target backend built into LLVM. This keeps
+    # --target useful for cross-compilation without hard-coding a host ISA.
+    AsmPrinter
+    AllTargetsCodeGens
 )
 
 #
@@ -49,8 +62,12 @@ add_library(
     src/semantic/SemanticAnalyzer.cpp
 
     src/ir/IRGenerator.cpp
+    src/ir/IR.cpp
+    src/ir/IRVerifier.cpp
 
     src/codegen/llvm/LLVMCodeGenerator.cpp
+    src/codegen/llvm/LLVMOptimizer.cpp
+    src/codegen/llvm/TargetCodeGenerator.cpp
 )
 
 #
@@ -139,6 +156,11 @@ install(
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
+install(
+    FILES debian/ocelotlc.1
+    DESTINATION ${CMAKE_INSTALL_MANDIR}/man1
+)
+
 #
 # Tests
 #
@@ -146,6 +168,12 @@ install(
 if(BUILD_TESTING)
 
     find_package(GTest REQUIRED)
+
+    # Used only to validate the format and architecture of emitted objects.
+    llvm_map_components_to_libnames(
+        LLVM_TEST_LIBS
+        Object
+    )
 
     add_executable(
         ocelotl_tests
@@ -158,14 +186,18 @@ if(BUILD_TESTING)
         tests/semantic/SemanticAnalyzerTests.cpp
 
         tests/ir/IRGeneratorTests.cpp
+        tests/ir/IRVerifierTests.cpp
 
         tests/codegen/LLVMCodeGeneratorTests.cpp
+        tests/codegen/LLVMOptimizerTests.cpp
+        tests/codegen/TargetCodeGeneratorTests.cpp
     )
 
     target_link_libraries(
         ocelotl_tests
         PRIVATE
             ocelotl_compiler
+            ${LLVM_TEST_LIBS}
             GTest::gtest_main
     )
 
@@ -182,5 +214,46 @@ if(BUILD_TESTING)
     gtest_discover_tests(
         ocelotl_tests
     )
+
+    if(UNIX)
+        add_test(
+            NAME NativeExecution.TrueBranch
+            COMMAND
+                ${CMAKE_COMMAND}
+                -DCOMPILER=$<TARGET_FILE:ocelotlc>
+                -DLINKER=${CMAKE_CXX_COMPILER}
+                -DSOURCE_VALUE=12
+                -DEXPECTED=13
+                -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/native-tests
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/codegen/NativeExecutionTest.cmake
+        )
+
+        add_test(
+            NAME NativeExecution.FalseBranch
+            COMMAND
+                ${CMAKE_COMMAND}
+                -DCOMPILER=$<TARGET_FILE:ocelotlc>
+                -DLINKER=${CMAKE_CXX_COMPILER}
+                -DSOURCE_VALUE=2
+                -DEXPECTED=1
+                -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/native-tests
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/codegen/NativeExecutionTest.cmake
+        )
+
+        foreach(OPT_LEVEL 0 1 2 3)
+            add_test(
+                NAME NativeOptimization.O${OPT_LEVEL}
+                COMMAND
+                    ${CMAKE_COMMAND}
+                    -DCOMPILER=$<TARGET_FILE:ocelotlc>
+                    -DLINKER=${CMAKE_CXX_COMPILER}
+                    -DSOURCE_VALUE=12
+                    -DEXPECTED=13
+                    -DOPT_LEVEL=-O${OPT_LEVEL}
+                    -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/native-opt-O${OPT_LEVEL}
+                    -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/codegen/NativeExecutionTest.cmake
+            )
+        endforeach()
+    endif()
 
 endif()

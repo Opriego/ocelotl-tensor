@@ -32,6 +32,9 @@ void SemanticAnalyzer::analyze(
     const ast::Program& program
 )
 {
+    symbols_ = {};
+    returnType_.reset();
+
     for (const auto& statement : program.statements) {
         analyzeStatement(statement);
     }
@@ -66,6 +69,14 @@ void SemanticAnalyzer::analyzeStatement(
                 std::is_same_v<Node, ast::ReturnStmt>
             ) {
                 analyzeReturn(node);
+            }
+            else if constexpr (
+                std::is_same_v<Node, std::shared_ptr<ast::IfStmt>>
+            ) {
+                if (!node) {
+                    throw SemanticError{"encountered null if statement"};
+                }
+                analyzeIf(*node);
             }
         },
         statement
@@ -175,9 +186,56 @@ void SemanticAnalyzer::analyzeReturn(
      * The return type itself is not stored yet because functions
      * are not part of the current language subset.
      */
-    static_cast<void>(
-        analyzeExpression(returnStatement.value)
-    );
+    const TensorType type = analyzeExpression(returnStatement.value);
+    if (returnType_ &&
+        (returnType_->elementType != type.elementType ||
+         returnType_->shape != type.shape)) {
+        throw SemanticError{"return type mismatch"};
+    }
+    returnType_ = type;
+}
+
+void SemanticAnalyzer::analyzeIf(const ast::IfStmt& ifStatement)
+{
+    const TensorType conditionType = analyzeExpression(ifStatement.condition);
+    if (conditionType.elementType != "i1" || !conditionType.shape.empty()) {
+        throw SemanticError{
+            makeLocationPrefix(ifStatement.location) +
+            "if condition must have type i1"
+        };
+    }
+
+    const SymbolTable before = symbols_;
+
+    for (const auto& statement : ifStatement.thenStatements) {
+        analyzeStatement(statement);
+    }
+    const SymbolTable thenSymbols = symbols_;
+
+    symbols_ = before;
+    for (const auto& statement : ifStatement.elseStatements) {
+        analyzeStatement(statement);
+    }
+    const SymbolTable elseSymbols = symbols_;
+
+    symbols_ = before;
+    for (const auto& [name, thenSymbol] : thenSymbols.entries()) {
+        if (before.contains(name)) {
+            continue;
+        }
+
+        const Symbol* elseSymbol = elseSymbols.lookup(name);
+        if (elseSymbol == nullptr) {
+            continue;
+        }
+        if (thenSymbol.type.elementType != elseSymbol->type.elementType ||
+            thenSymbol.type.shape != elseSymbol->type.shape) {
+            throw SemanticError{
+                "branch type mismatch for symbol '" + name + "'"
+            };
+        }
+        static_cast<void>(symbols_.declare(thenSymbol));
+    }
 }
 
 TensorType SemanticAnalyzer::analyzeExpression(
@@ -243,9 +301,51 @@ TensorType SemanticAnalyzer::analyzeExpression(
 
                 return analyzeCall(*node);
             }
+            else if constexpr (
+                std::is_same_v<Node, std::shared_ptr<ast::BinaryExpr>>
+            ) {
+                if (!node) {
+                    throw SemanticError{"encountered null binary expression"};
+                }
+                return analyzeBinary(*node);
+            }
         },
         expression
     );
+}
+
+TensorType SemanticAnalyzer::analyzeBinary(const ast::BinaryExpr& binary)
+{
+    const TensorType lhs = analyzeExpression(binary.lhs);
+    const TensorType rhs = analyzeExpression(binary.rhs);
+
+    if (!lhs.shape.empty() || !rhs.shape.empty()) {
+        throw SemanticError{"scalar binary operator requires scalar operands"};
+    }
+    if (lhs.elementType != rhs.elementType) {
+        throw SemanticError{"binary operator requires matching operand types"};
+    }
+    if (lhs.elementType != "i64" && lhs.elementType != "f64") {
+        throw SemanticError{"binary operator requires numeric operands"};
+    }
+
+    switch (binary.op) {
+    case ast::BinaryOperator::Add:
+    case ast::BinaryOperator::Subtract:
+    case ast::BinaryOperator::Multiply:
+    case ast::BinaryOperator::Divide:
+        return lhs;
+
+    case ast::BinaryOperator::Equal:
+    case ast::BinaryOperator::NotEqual:
+    case ast::BinaryOperator::Less:
+    case ast::BinaryOperator::LessEqual:
+    case ast::BinaryOperator::Greater:
+    case ast::BinaryOperator::GreaterEqual:
+        return TensorType{.elementType = "i1", .shape = {}};
+    }
+
+    throw SemanticError{"unknown binary operator"};
 }
 
 TensorType SemanticAnalyzer::analyzeIdentifier(

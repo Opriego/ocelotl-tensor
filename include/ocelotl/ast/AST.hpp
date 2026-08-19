@@ -33,17 +33,39 @@ struct FloatExpr {
 };
 
 struct CallExpr;
+struct BinaryExpr;
+
+enum class BinaryOperator {
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+    Equal,
+    NotEqual,
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual
+};
 
 using Expression = std::variant<
     IdentifierExpr,
     IntegerExpr,
     FloatExpr,
-    std::shared_ptr<CallExpr>
+    std::shared_ptr<CallExpr>,
+    std::shared_ptr<BinaryExpr>
 >;
 
 struct CallExpr {
     std::string callee;
     std::vector<Expression> arguments;
+    SourceLocation location;
+};
+
+struct BinaryExpr {
+    BinaryOperator op;
+    Expression lhs;
+    Expression rhs;
     SourceLocation location;
 };
 
@@ -64,11 +86,21 @@ struct ReturnStmt {
     SourceLocation location;
 };
 
+struct IfStmt;
+
 using Statement = std::variant<
     TensorDecl,
     Assignment,
-    ReturnStmt
+    ReturnStmt,
+    std::shared_ptr<IfStmt>
 >;
+
+struct IfStmt {
+    Expression condition;
+    std::vector<Statement> thenStatements;
+    std::vector<Statement> elseStatements;
+    SourceLocation location;
+};
 
 struct Program {
     std::vector<Statement> statements;

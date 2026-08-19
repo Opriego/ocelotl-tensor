@@ -353,3 +353,47 @@ TEST(ParserTest, ReportsMissingClosingParenthesis)
         );
     }
 }
+
+TEST(ParserTest, ParsesArithmeticWithPrecedence)
+{
+    const ast::Program program = frontend::Parser{"X = 1 + 2 * 3"}.parseProgram();
+    const auto& assignment = std::get<ast::Assignment>(program.statements[0]);
+    const auto root = std::get<std::shared_ptr<ast::BinaryExpr>>(assignment.value);
+    ASSERT_NE(root, nullptr);
+    EXPECT_EQ(root->op, ast::BinaryOperator::Add);
+
+    const auto rhs = std::get<std::shared_ptr<ast::BinaryExpr>>(root->rhs);
+    ASSERT_NE(rhs, nullptr);
+    EXPECT_EQ(rhs->op, ast::BinaryOperator::Multiply);
+}
+
+TEST(ParserTest, ParsesIfElseAndComparison)
+{
+    const ast::Program program = frontend::Parser{
+        "if 4 > 2 { X = 1 } else { X = 0 }\nreturn X"}.parseProgram();
+    ASSERT_EQ(program.statements.size(), 2U);
+    const auto statement =
+        std::get<std::shared_ptr<ast::IfStmt>>(program.statements[0]);
+    ASSERT_NE(statement, nullptr);
+    EXPECT_EQ(statement->thenStatements.size(), 1U);
+    EXPECT_EQ(statement->elseStatements.size(), 1U);
+    const auto condition =
+        std::get<std::shared_ptr<ast::BinaryExpr>>(statement->condition);
+    ASSERT_NE(condition, nullptr);
+    EXPECT_EQ(condition->op, ast::BinaryOperator::Greater);
+}
+
+TEST(ParserTest, ParsesNestedIf)
+{
+    EXPECT_NO_THROW({
+        [[maybe_unused]] const ast::Program program = frontend::Parser{
+            "if 1 == 1 { if 2 != 3 { X = 1 } else { X = 2 } } "
+            "else { X = 3 } return X"}.parseProgram();
+    });
+}
+
+TEST(ParserTest, RejectsIfWithoutElse)
+{
+    frontend::Parser parser{"if 1 == 1 { X = 1 }"};
+    EXPECT_THROW(parseExpectingFailure(parser), std::runtime_error);
+}

@@ -347,4 +347,49 @@ TEST(
     );
 }
 
+TEST(SemanticAnalyzerTest, AcceptsIntegerArithmeticAndComparison)
+{
+    const ast::Program program = parse(
+        "X = 4 + 2 * 3\nC = X >= 10\n"
+        "if C { Y = X + 1 } else { Y = X - 1 }\nreturn Y");
+    sema::SemanticAnalyzer analyzer;
+    EXPECT_NO_THROW(analyzer.analyze(program));
+    ASSERT_NE(analyzer.symbols().lookup("C"), nullptr);
+    EXPECT_EQ(analyzer.symbols().lookup("C")->type.elementType, "i1");
+    ASSERT_NE(analyzer.symbols().lookup("Y"), nullptr);
+    EXPECT_EQ(analyzer.symbols().lookup("Y")->type.elementType, "i64");
+}
+
+TEST(SemanticAnalyzerTest, AcceptsFloatingPointArithmeticAndComparison)
+{
+    const ast::Program program = parse(
+        "X = 3.0 / 2.0\n"
+        "if X < 2.0 { Y = X + 1.0 } else { Y = X - 1.0 }\n"
+        "return Y");
+    sema::SemanticAnalyzer analyzer;
+    EXPECT_NO_THROW(analyzer.analyze(program));
+}
+
+TEST(SemanticAnalyzerTest, RejectsNonBooleanIfCondition)
+{
+    const ast::Program program = parse(
+        "if 42 { X = 1 } else { X = 0 }\nreturn X");
+    sema::SemanticAnalyzer analyzer;
+    EXPECT_THROW(analyzer.analyze(program), sema::SemanticError);
+}
+
+TEST(SemanticAnalyzerTest, RejectsMixedArithmeticTypes)
+{
+    const ast::Program program = parse("X = 1 + 2.0\nreturn X");
+    sema::SemanticAnalyzer analyzer;
+    EXPECT_THROW(analyzer.analyze(program), sema::SemanticError);
+}
+
+TEST(SemanticAnalyzerTest, DoesNotExposeOneSidedBranchBinding)
+{
+    const ast::Program program = parse(
+        "if 1 == 1 { X = 1 } else { Y = 2 }\nreturn X");
+    sema::SemanticAnalyzer analyzer;
+    EXPECT_THROW(analyzer.analyze(program), sema::SemanticError);
+}
 

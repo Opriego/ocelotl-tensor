@@ -89,6 +89,9 @@ ast::Statement Parser::parseStatement()
     case TokenKind::KwReturn:
         return parseReturnStatement();
 
+    case TokenKind::KwIf:
+        return parseIfStatement();
+
     case TokenKind::Identifier:
         return parseAssignment();
 
@@ -240,7 +243,94 @@ ast::ReturnStmt Parser::parseReturnStatement()
     };
 }
 
+std::shared_ptr<ast::IfStmt> Parser::parseIfStatement()
+{
+    const Token ifToken = consume(TokenKind::KwIf, "'if'");
+    ast::Expression condition = parseExpression();
+    std::vector<ast::Statement> thenStatements = parseBlock();
+
+    consume(TokenKind::KwElse, "'else'");
+    std::vector<ast::Statement> elseStatements = parseBlock();
+
+    auto statement = std::make_shared<ast::IfStmt>();
+    statement->condition = std::move(condition);
+    statement->thenStatements = std::move(thenStatements);
+    statement->elseStatements = std::move(elseStatements);
+    statement->location = ifToken.location;
+    return statement;
+}
+
+std::vector<ast::Statement> Parser::parseBlock()
+{
+    consume(TokenKind::LeftBrace, "'{'");
+    std::vector<ast::Statement> statements;
+
+    while (!check(TokenKind::RightBrace)) {
+        if (check(TokenKind::EndOfFile)) {
+            throwParseError(current_, "expected '}'");
+        }
+        statements.emplace_back(parseStatement());
+    }
+
+    consume(TokenKind::RightBrace, "'}'");
+    return statements;
+}
+
 ast::Expression Parser::parseExpression()
+{
+    return parseComparison();
+}
+
+ast::Expression Parser::parseComparison()
+{
+    ast::Expression expression = parseAdditive();
+
+    while (check(TokenKind::EqualEqual) || check(TokenKind::BangEqual) ||
+           check(TokenKind::Less) || check(TokenKind::LessEqual) ||
+           check(TokenKind::Greater) || check(TokenKind::GreaterEqual)) {
+        const Token operatorToken = current_;
+        advance();
+        expression = makeBinary(
+            std::move(expression),
+            operatorToken,
+            parseAdditive()
+        );
+    }
+
+    return expression;
+}
+
+ast::Expression Parser::parseAdditive()
+{
+    ast::Expression expression = parseMultiplicative();
+    while (check(TokenKind::Plus) || check(TokenKind::Minus)) {
+        const Token operatorToken = current_;
+        advance();
+        expression = makeBinary(
+            std::move(expression),
+            operatorToken,
+            parseMultiplicative()
+        );
+    }
+    return expression;
+}
+
+ast::Expression Parser::parseMultiplicative()
+{
+    ast::Expression expression = parsePrimary();
+    while (check(TokenKind::Star) || check(TokenKind::Slash)) {
+        const Token operatorToken = current_;
+        advance();
+        expression = makeBinary(
+            std::move(expression),
+            operatorToken,
+            parsePrimary()
+        );
+    }
+    return expression;
+}
+
+ast::Expression Parser::parsePrimary()
 {
     switch (current_.kind) {
     case TokenKind::Identifier:
@@ -280,12 +370,49 @@ ast::Expression Parser::parseExpression()
         }
     }
 
+    case TokenKind::LeftParen: {
+        advance();
+        ast::Expression expression = parseExpression();
+        consume(TokenKind::RightParen, "')'");
+        return expression;
+    }
+
     default:
         throwParseError(
             current_,
             "expected expression"
         );
     }
+}
+
+ast::Expression Parser::makeBinary(
+    ast::Expression lhs,
+    const Token& operatorToken,
+    ast::Expression rhs
+)
+{
+    ast::BinaryOperator operation;
+    switch (operatorToken.kind) {
+    case TokenKind::Plus: operation = ast::BinaryOperator::Add; break;
+    case TokenKind::Minus: operation = ast::BinaryOperator::Subtract; break;
+    case TokenKind::Star: operation = ast::BinaryOperator::Multiply; break;
+    case TokenKind::Slash: operation = ast::BinaryOperator::Divide; break;
+    case TokenKind::EqualEqual: operation = ast::BinaryOperator::Equal; break;
+    case TokenKind::BangEqual: operation = ast::BinaryOperator::NotEqual; break;
+    case TokenKind::Less: operation = ast::BinaryOperator::Less; break;
+    case TokenKind::LessEqual: operation = ast::BinaryOperator::LessEqual; break;
+    case TokenKind::Greater: operation = ast::BinaryOperator::Greater; break;
+    case TokenKind::GreaterEqual: operation = ast::BinaryOperator::GreaterEqual; break;
+    default:
+        throwParseError(operatorToken, "expected binary operator");
+    }
+
+    auto expression = std::make_shared<ast::BinaryExpr>();
+    expression->op = operation;
+    expression->lhs = std::move(lhs);
+    expression->rhs = std::move(rhs);
+    expression->location = operatorToken.location;
+    return expression;
 }
 
 ast::Expression Parser::parseIdentifierOrCall()

@@ -23,6 +23,12 @@ std::string_view toString(TokenKind kind) noexcept
     case TokenKind::KwReturn:
         return "return";
 
+    case TokenKind::KwIf:
+        return "if";
+
+    case TokenKind::KwElse:
+        return "else";
+
     case TokenKind::Colon:
         return ":";
 
@@ -31,6 +37,36 @@ std::string_view toString(TokenKind kind) noexcept
 
     case TokenKind::Equal:
         return "=";
+
+    case TokenKind::EqualEqual:
+        return "==";
+
+    case TokenKind::BangEqual:
+        return "!=";
+
+    case TokenKind::Plus:
+        return "+";
+
+    case TokenKind::Minus:
+        return "-";
+
+    case TokenKind::Star:
+        return "*";
+
+    case TokenKind::Slash:
+        return "/";
+
+    case TokenKind::Less:
+        return "<";
+
+    case TokenKind::LessEqual:
+        return "<=";
+
+    case TokenKind::Greater:
+        return ">";
+
+    case TokenKind::GreaterEqual:
+        return ">=";
 
     case TokenKind::LeftBracket:
         return "[";
@@ -43,6 +79,12 @@ std::string_view toString(TokenKind kind) noexcept
 
     case TokenKind::RightParen:
         return ")";
+
+    case TokenKind::LeftBrace:
+        return "{";
+
+    case TokenKind::RightBrace:
+        return "}";
 
     case TokenKind::Unknown:
         return "unknown";

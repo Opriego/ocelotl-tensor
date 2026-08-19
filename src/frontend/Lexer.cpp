@@ -113,6 +113,10 @@ Token Lexer::lexIdentifierOrKeyword()
         kind = TokenKind::KwTensor;
     } else if (lexeme == "return") {
         kind = TokenKind::KwReturn;
+    } else if (lexeme == "if") {
+        kind = TokenKind::KwIf;
+    } else if (lexeme == "else") {
+        kind = TokenKind::KwElse;
     }
 
     return makeToken(
@@ -215,11 +219,48 @@ Token Lexer::nextToken()
         );
 
     case '=':
+        if (peek() == '=') {
+            advance();
+            return makeToken(TokenKind::EqualEqual, startOffset, startLocation);
+        }
         return makeToken(
             TokenKind::Equal,
             startOffset,
             startLocation
         );
+
+    case '!':
+        if (peek() == '=') {
+            advance();
+            return makeToken(TokenKind::BangEqual, startOffset, startLocation);
+        }
+        return makeToken(TokenKind::Unknown, startOffset, startLocation);
+
+    case '+':
+        return makeToken(TokenKind::Plus, startOffset, startLocation);
+
+    case '-':
+        return makeToken(TokenKind::Minus, startOffset, startLocation);
+
+    case '*':
+        return makeToken(TokenKind::Star, startOffset, startLocation);
+
+    case '/':
+        return makeToken(TokenKind::Slash, startOffset, startLocation);
+
+    case '<':
+        if (peek() == '=') {
+            advance();
+            return makeToken(TokenKind::LessEqual, startOffset, startLocation);
+        }
+        return makeToken(TokenKind::Less, startOffset, startLocation);
+
+    case '>':
+        if (peek() == '=') {
+            advance();
+            return makeToken(TokenKind::GreaterEqual, startOffset, startLocation);
+        }
+        return makeToken(TokenKind::Greater, startOffset, startLocation);
 
     case '[':
         return makeToken(
@@ -248,6 +289,12 @@ Token Lexer::nextToken()
             startOffset,
             startLocation
         );
+
+    case '{':
+        return makeToken(TokenKind::LeftBrace, startOffset, startLocation);
+
+    case '}':
+        return makeToken(TokenKind::RightBrace, startOffset, startLocation);
 
     default:
         return makeToken(

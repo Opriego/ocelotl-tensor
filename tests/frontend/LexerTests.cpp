@@ -324,6 +324,30 @@ TEST(LexerTest, DoesNotMatchKeywordPrefixes)
     EXPECT_EQ(lexer.nextToken().kind, TokenKind::EndOfFile);
 }
 
+TEST(LexerTest, TokenizesControlFlowAndScalarOperators)
+{
+    Lexer lexer{"if A >= 1 { B = A + 2 * 3 } else { B = A != 0 }"};
+    EXPECT_EQ(lexer.nextToken().kind, TokenKind::KwIf);
+    EXPECT_EQ(lexer.nextToken().kind, TokenKind::Identifier);
+    EXPECT_EQ(lexer.nextToken().kind, TokenKind::GreaterEqual);
+    EXPECT_EQ(lexer.nextToken().kind, TokenKind::IntegerLiteral);
+    EXPECT_EQ(lexer.nextToken().kind, TokenKind::LeftBrace);
+    EXPECT_EQ(lexer.nextToken().kind, TokenKind::Identifier);
+    EXPECT_EQ(lexer.nextToken().kind, TokenKind::Equal);
+    EXPECT_EQ(lexer.nextToken().kind, TokenKind::Identifier);
+    EXPECT_EQ(lexer.nextToken().kind, TokenKind::Plus);
+    EXPECT_EQ(lexer.nextToken().kind, TokenKind::IntegerLiteral);
+    EXPECT_EQ(lexer.nextToken().kind, TokenKind::Star);
+    EXPECT_EQ(lexer.nextToken().kind, TokenKind::IntegerLiteral);
+    EXPECT_EQ(lexer.nextToken().kind, TokenKind::RightBrace);
+    EXPECT_EQ(lexer.nextToken().kind, TokenKind::KwElse);
+    EXPECT_EQ(lexer.nextToken().kind, TokenKind::LeftBrace);
+    EXPECT_EQ(lexer.nextToken().kind, TokenKind::Identifier);
+    EXPECT_EQ(lexer.nextToken().kind, TokenKind::Equal);
+    EXPECT_EQ(lexer.nextToken().kind, TokenKind::Identifier);
+    EXPECT_EQ(lexer.nextToken().kind, TokenKind::BangEqual);
+}
+
 TEST(LexerTest, TracksByteOffsets)
 {
     constexpr std::string_view source =

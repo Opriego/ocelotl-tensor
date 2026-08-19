@@ -38,4 +38,10 @@ std::size_t SymbolTable::size() const noexcept
     return symbols_.size();
 }
 
+const std::unordered_map<std::string, Symbol>&
+SymbolTable::entries() const noexcept
+{
+    return symbols_;
+}
+
 } // namespace ocelotl::sema

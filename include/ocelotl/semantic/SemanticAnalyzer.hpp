@@ -5,6 +5,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <optional>
 
 namespace ocelotl::sema {
 
@@ -44,6 +45,8 @@ private:
         const ast::ReturnStmt& returnStatement
     );
 
+    void analyzeIf(const ast::IfStmt& ifStatement);
+
     [[nodiscard]]
     TensorType analyzeExpression(
         const ast::Expression& expression
@@ -59,7 +62,11 @@ private:
         const ast::CallExpr& call
     );
 
+    [[nodiscard]]
+    TensorType analyzeBinary(const ast::BinaryExpr& binary);
+
     SymbolTable symbols_;
+    std::optional<TensorType> returnType_;
 };
 
 } // namespace ocelotl::sema

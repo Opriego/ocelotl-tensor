@@ -22,15 +22,30 @@ enum class TokenKind {
 
     KwTensor,
     KwReturn,
+    KwIf,
+    KwElse,
 
     Colon,
     Comma,
     Equal,
+    EqualEqual,
+    BangEqual,
+
+    Plus,
+    Minus,
+    Star,
+    Slash,
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual,
 
     LeftBracket,
     RightBracket,
     LeftParen,
     RightParen,
+    LeftBrace,
+    RightBrace,
 
     Unknown
 };

@@ -1,0 +1,7 @@
+X = 12
+if X > 10 {
+    Y = X + 1
+} else {
+    Y = X - 1
+}
+return Y

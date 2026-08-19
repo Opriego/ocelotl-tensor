@@ -185,3 +185,86 @@ TEST(
         )
     );
 }
+
+TEST(LLVMCodeGeneratorTest, LowersConditionalBranchesArithmeticAndPhi)
+{
+    constexpr std::string_view source =
+        "X = 12\n"
+        "if X > 10 { Y = X + 1 } else { Y = X - 1 }\n"
+        "return Y\n";
+    CompilationFixture fixture{source};
+    ir::IRGenerator irGenerator{fixture.semanticAnalyzer};
+    const ir::Module irModule = irGenerator.generate(fixture.program);
+    codegen::LLVMCodeGenerator generator;
+    const auto llvmModule = generator.generate(irModule);
+    const std::string output = generator.emitToString(*llvmModule);
+
+    EXPECT_NE(output.find("icmp sgt i64"), std::string::npos);
+    EXPECT_NE(output.find("br i1"), std::string::npos);
+    EXPECT_NE(output.find("add i64"), std::string::npos);
+    EXPECT_NE(output.find("sub i64"), std::string::npos);
+    EXPECT_NE(output.find("phi i64"), std::string::npos);
+    EXPECT_FALSE(llvm::verifyModule(*llvmModule, nullptr));
+}
+
+TEST(LLVMCodeGeneratorTest, LowersFalseBranchProgram)
+{
+    constexpr std::string_view source =
+        "X = 2\n"
+        "if X > 10 { Y = X + 1 } else { Y = X - 1 }\n"
+        "return Y\n";
+    CompilationFixture fixture{source};
+    ir::IRGenerator irGenerator{fixture.semanticAnalyzer};
+    codegen::LLVMCodeGenerator generator;
+    const auto llvmModule = generator.generate(
+        irGenerator.generate(fixture.program));
+    EXPECT_FALSE(llvm::verifyModule(*llvmModule, nullptr));
+}
+
+TEST(LLVMCodeGeneratorTest, LowersNestedIf)
+{
+    constexpr std::string_view source =
+        "X = 5\n"
+        "if X > 0 { if X < 10 { Y = X + 2 } else { Y = X - 2 } } "
+        "else { Y = 1 } return Y";
+    CompilationFixture fixture{source};
+    ir::IRGenerator irGenerator{fixture.semanticAnalyzer};
+    codegen::LLVMCodeGenerator generator;
+    const auto llvmModule = generator.generate(
+        irGenerator.generate(fixture.program));
+    const std::string output = generator.emitToString(*llvmModule);
+    EXPECT_NE(output.find("phi i64"), std::string::npos);
+    EXPECT_FALSE(llvm::verifyModule(*llvmModule, nullptr));
+}
+
+TEST(LLVMCodeGeneratorTest, LowersReturnsInBothBranches)
+{
+    constexpr std::string_view source =
+        "X = 12\n"
+        "if X > 10 { return X + 1 } else { return X - 1 }\n";
+    CompilationFixture fixture{source};
+    ir::IRGenerator irGenerator{fixture.semanticAnalyzer};
+    codegen::LLVMCodeGenerator generator;
+    const auto llvmModule = generator.generate(
+        irGenerator.generate(fixture.program));
+    EXPECT_FALSE(llvm::verifyModule(*llvmModule, nullptr));
+    EXPECT_EQ(llvmModule->getFunction("main")->size(), 3U);
+}
+
+TEST(LLVMCodeGeneratorTest, LowersFloatingPointControlFlow)
+{
+    constexpr std::string_view source =
+        "X = 1.5\n"
+        "if X <= 2.0 { Y = X * 2.0 } else { Y = X / 2.0 }\n"
+        "return Y\n";
+    CompilationFixture fixture{source};
+    ir::IRGenerator irGenerator{fixture.semanticAnalyzer};
+    codegen::LLVMCodeGenerator generator;
+    const auto llvmModule = generator.generate(
+        irGenerator.generate(fixture.program));
+    const std::string output = generator.emitToString(*llvmModule);
+    EXPECT_NE(output.find("fcmp ole double"), std::string::npos);
+    EXPECT_NE(output.find("fmul double"), std::string::npos);
+    EXPECT_NE(output.find("fdiv double"), std::string::npos);
+    EXPECT_NE(output.find("phi double"), std::string::npos);
+}
