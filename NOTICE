@@ -1,12 +1,19 @@
-Ocelotl Tensor Compiler
-Copyright © 2026 Oscar Priego
+Ocelotl-Tensor
+Copyright (C) 2026 Oscar Priego Verdugo
 
-Original work by Oscar Priego.
+The Ocelotl-Tensor compiler and other repository-owned project materials are
+licensed under GPL-3.0-only unless otherwise identified.
 
-Licensed for non-commercial use under the
-PolyForm Noncommercial License 1.0.0.
+The Ocelotl runtime in `runtime/**` and `include/ocelotl/runtime/**` is
+licensed under Apache-2.0.
 
-Commercial use requires a separate license from the copyright holder.
+Ocelotl-Tensor uses and links components from LLVM, which is third-party
+software licensed under Apache-2.0 WITH LLVM-exception. LLVM remains
+copyright its respective contributors. See THIRD_PARTY_NOTICES.md.
 
-Removal or omission of the attribution and license notices is not permitted
-where those notices are required by the applicable license.
+Alternative commercial licensing for Ocelotl-Tensor compiler code is
+available from the copyright holder for organizations requiring proprietary
+terms. This availability is separate from and does not modify or restrict the
+rights granted under GPL-3.0-only.
+
+This NOTICE is informational and does not modify any license terms.

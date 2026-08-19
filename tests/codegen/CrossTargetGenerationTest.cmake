@@ -1,3 +1,6 @@
+# Copyright (C) 2026 Oscar Priego Verdugo
+# SPDX-License-Identifier: GPL-3.0-only
+
 if(NOT DEFINED COMPILER OR NOT DEFINED LLVM_READOBJ OR
    NOT DEFINED SOURCE OR NOT DEFINED WORK_DIR)
     message(FATAL_ERROR "cross-target generation test is missing configuration")

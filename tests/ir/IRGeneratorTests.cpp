@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Oscar Priego Verdugo
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "ocelotl/frontend/Parser.hpp"
 #include "ocelotl/ir/IR.hpp"
 #include "ocelotl/ir/IRGenerator.hpp"

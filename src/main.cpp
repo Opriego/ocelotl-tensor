@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Oscar Priego Verdugo
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "ocelotl/codegen/llvm/LLVMCodeGenerator.hpp"
 #include "ocelotl/codegen/llvm/LLVMOptimizer.hpp"
 #include "ocelotl/codegen/llvm/TargetCodeGenerator.hpp"

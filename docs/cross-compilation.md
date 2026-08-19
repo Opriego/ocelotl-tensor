@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2026 Oscar Priego Verdugo
+SPDX-License-Identifier: GPL-3.0-only
+-->
+
 # Cross-compilation model
 
 Ocelotl distinguishes three platforms:

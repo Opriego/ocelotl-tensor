@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2026 Oscar Priego Verdugo
+SPDX-License-Identifier: GPL-3.0-only
+-->
+
 # Ocelotl Tensor Language
 
 Ocelotl is a small compiler language for exploring frontend, IR, and native

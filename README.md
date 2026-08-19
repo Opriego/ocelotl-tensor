@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2026 Oscar Priego Verdugo
+SPDX-License-Identifier: GPL-3.0-only
+-->
+
 # Ocelotl Tensor Compiler
 
 Ocelotl is an experimental compiler written in modern C++20 for exploring end-to-end compiler engineering, from source-language analysis to native object generation.
@@ -716,10 +721,19 @@ The value of the project is in implementing and exposing the compiler pipeline e
 
 ## License
 
-Ocelotl Tensor Compiler is source-available under the PolyForm Noncommercial License 1.0.0.
+Ocelotl-Tensor compiler and project code is licensed under `GPL-3.0-only`.
+The Ocelotl runtime in `runtime/**` and `include/ocelotl/runtime/**` is licensed
+separately under `Apache-2.0`.
 
-The repository may be used, studied, modified, and redistributed for uses permitted by that license.
+Programs compiled with Ocelotl do not become subject to the GPL merely because
+they link to the Apache-2.0-licensed Ocelotl runtime.
 
-Commercial use requires a separate license from the copyright holder.
+Alternative commercial licensing for the compiler is available from the
+copyright holder for organizations requiring proprietary terms. That option is
+separate from and does not modify the rights granted under `GPL-3.0-only`.
 
-Copyright © 2026 Oscar Priego.
+See [LICENSE](LICENSE), [NOTICE](NOTICE), [`LICENSES/`](LICENSES/), and
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the complete licensing and
+third-party attribution map.
+
+Copyright (C) 2026 Oscar Priego Verdugo.

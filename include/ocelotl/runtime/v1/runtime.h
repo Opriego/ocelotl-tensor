@@ -1,3 +1,6 @@
+/* Copyright (C) 2026 Oscar Priego Verdugo */
+/* SPDX-License-Identifier: Apache-2.0 */
+
 #ifndef OCELOTL_RUNTIME_V1_RUNTIME_H
 #define OCELOTL_RUNTIME_V1_RUNTIME_H
 

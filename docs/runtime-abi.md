@@ -1,3 +1,8 @@
+<!--
+Copyright (C) 2026 Oscar Priego Verdugo
+SPDX-License-Identifier: GPL-3.0-only
+-->
+
 # Ocelotl runtime ABI v1
 
 `libocelotlrt` is a small support library for operations that generated code

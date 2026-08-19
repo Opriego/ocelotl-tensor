@@ -1,3 +1,6 @@
+/* Copyright (C) 2026 Oscar Priego Verdugo */
+/* SPDX-License-Identifier: Apache-2.0 */
+
 #define _POSIX_C_SOURCE 200112L
 
 #include "ocelotl/runtime/v1/runtime.h"
