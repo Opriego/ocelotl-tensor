@@ -86,7 +86,7 @@ TEST(
     EXPECT_TRUE(
         mainFunction
             ->getReturnType()
-            ->isIntegerTy(64)
+            ->isIntegerTy(32)
     );
 }
 
@@ -124,28 +124,30 @@ TEST(
 
     EXPECT_NE(
         llvmIR.find(
-            "define i64 @main()"
+            "define i32 @main()"
         ),
         std::string::npos
     );
 
     EXPECT_NE(
         llvmIR.find(
-            "ret i64 42"
+            "trunc i64 42 to i32"
         ),
         std::string::npos
     );
+    EXPECT_NE(llvmIR.find("ret i32 %exit.status"), std::string::npos);
     EXPECT_EQ(llvmIR.find("ocelotl_rt_v1_"), std::string::npos);
 }
 
 TEST(
     LLVMCodeGeneratorTest,
-    GeneratesValidFloatingPointFunction
+    PreservesFloatingPointLoweringWithIntegerProgramStatus
 )
 {
     constexpr std::string_view source =
         "X = 3.14\n"
-        "return X\n";
+        "Y = X + 1.0\n"
+        "return 0\n";
 
     CompilationFixture fixture{
         source
@@ -176,7 +178,12 @@ TEST(
     EXPECT_TRUE(
         mainFunction
             ->getReturnType()
-            ->isDoubleTy()
+            ->isIntegerTy(32)
+    );
+
+    EXPECT_NE(
+        generator.emitToString(*llvmModule).find("fadd double"),
+        std::string::npos
     );
 
     EXPECT_FALSE(
@@ -257,7 +264,7 @@ TEST(LLVMCodeGeneratorTest, LowersFloatingPointControlFlow)
     constexpr std::string_view source =
         "X = 1.5\n"
         "if X <= 2.0 { Y = X * 2.0 } else { Y = X / 2.0 }\n"
-        "return Y\n";
+        "return 0\n";
     CompilationFixture fixture{source};
     ir::IRGenerator irGenerator{fixture.semanticAnalyzer};
     codegen::LLVMCodeGenerator generator;
@@ -268,6 +275,35 @@ TEST(LLVMCodeGeneratorTest, LowersFloatingPointControlFlow)
     EXPECT_NE(output.find("fmul double"), std::string::npos);
     EXPECT_NE(output.find("fdiv double"), std::string::npos);
     EXPECT_NE(output.find("phi double"), std::string::npos);
+}
+
+TEST(LLVMCodeGeneratorTest, RejectsMalformedFloatingPointReturnIR)
+{
+    const sema::TensorType f64{.elementType = "f64", .shape = {}};
+    const ir::Module malformed{
+        0,
+        {{0, "entry", {{ir::ConstantFloatOp{0, 1.5, f64}}},
+          ir::ReturnOp{0}}}
+    };
+    codegen::LLVMCodeGenerator generator;
+
+    EXPECT_THROW(
+        static_cast<void>(generator.generate(malformed)),
+        std::runtime_error
+    );
+}
+
+TEST(LLVMCodeGeneratorTest, TruncatesProgramStatusToLow32Bits)
+{
+    CompilationFixture fixture{"return 4294967338"};
+    ir::IRGenerator irGenerator{fixture.semanticAnalyzer};
+    codegen::LLVMCodeGenerator generator;
+    const auto llvmModule = generator.generate(
+        irGenerator.generate(fixture.program));
+    const std::string output = generator.emitToString(*llvmModule);
+
+    EXPECT_NE(output.find("trunc i64 4294967338 to i32"), std::string::npos);
+    EXPECT_FALSE(llvm::verifyModule(*llvmModule, nullptr));
 }
 
 TEST(LLVMCodeGeneratorTest, LowersTensorStorageToRuntimeABI)

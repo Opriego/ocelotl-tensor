@@ -77,14 +77,14 @@ std::unique_ptr<llvm::Module> LLVMCodeGenerator::generate(const ir::Module& modu
         }
     }
 
-    llvm::Type* llvmReturnType =
-        returnType == nullptr ? nullptr : lowerType(context_, *returnType);
-    if (llvmReturnType == nullptr) {
-        throw std::runtime_error{"LLVM code generation does not support return type"};
+    if (returnType == nullptr || returnType->elementType != "i64" ||
+        !returnType->shape.empty()) {
+        throw std::runtime_error{
+            "LLVM executable lowering requires scalar i64 return values"};
     }
 
     auto* function = llvm::Function::Create(
-        llvm::FunctionType::get(llvmReturnType, false),
+        llvm::FunctionType::get(llvm::Type::getInt32Ty(context_), false),
         llvm::Function::ExternalLinkage,
         "main",
         llvmModule.get()
@@ -240,7 +240,11 @@ std::unique_ptr<llvm::Module> LLVMCodeGenerator::generate(const ir::Module& modu
                     builder.CreateCall(*release,
                                        {builder.CreateLoad(pointerType, slot)});
                 }
-                builder.CreateRet(values.at(terminator.value));
+                builder.CreateRet(builder.CreateTrunc(
+                    values.at(terminator.value),
+                    llvm::Type::getInt32Ty(context_),
+                    "exit.status"
+                ));
             }
         }, *block.terminator);
     }

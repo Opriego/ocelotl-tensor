@@ -46,6 +46,17 @@ std::size_t countBinaryInstructions(const llvm::Function& function)
     return count;
 }
 
+std::size_t countTruncInstructions(const llvm::Function& function)
+{
+    std::size_t count = 0;
+    for (const auto& block : function) {
+        for (const auto& instruction : block) {
+            count += llvm::isa<llvm::TruncInst>(instruction);
+        }
+    }
+    return count;
+}
+
 const llvm::ConstantInt* returnedInteger(const llvm::Function& function)
 {
     if (function.size() != 1U) return nullptr;
@@ -71,12 +82,14 @@ TEST(LLVMOptimizerTest, O0PreservesInspectableLoweringStructure)
     ASSERT_NE(function, nullptr);
     const std::size_t blocksBefore = function->size();
     const std::size_t binaryBefore = countBinaryInstructions(*function);
+    ASSERT_EQ(countTruncInstructions(*function), 1U);
 
     codegen::LLVMOptimizer{}.optimize(
         *lowered->module, codegen::OptimizationLevel::O0);
 
     EXPECT_EQ(function->size(), blocksBefore);
     EXPECT_EQ(countBinaryInstructions(*function), binaryBefore);
+    EXPECT_EQ(countTruncInstructions(*function), 1U);
     EXPECT_FALSE(llvm::verifyModule(*lowered->module, nullptr));
 }
 
@@ -95,6 +108,7 @@ TEST(LLVMOptimizerTest, O1FoldsConstantsEliminatesDeadCodeAndSimplifiesCFG)
     EXPECT_EQ(countBinaryInstructions(*function), 0U);
     const llvm::ConstantInt* returned = returnedInteger(*function);
     ASSERT_NE(returned, nullptr);
+    EXPECT_EQ(returned->getBitWidth(), 32U);
     EXPECT_EQ(returned->getSExtValue(), 13);
 }
 

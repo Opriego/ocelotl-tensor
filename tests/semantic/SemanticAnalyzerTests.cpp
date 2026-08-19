@@ -88,7 +88,7 @@ TEST(
 {
     constexpr std::string_view source =
         "tensor A: f32[1024,1024]\n"
-        "return A\n";
+        "return 0\n";
 
     const ast::Program program =
         parse(source);
@@ -129,7 +129,7 @@ TEST(
         "tensor A: f32[1024,1024]\n"
         "tensor B: f32[1024,1024]\n"
         "C = matmul(A, B)\n"
-        "return C\n";
+        "return 0\n";
 
     const ast::Program program =
         parse(source);
@@ -183,7 +183,7 @@ TEST(
         "tensor B: f32[1024,1024]\n"
         "C = matmul(A, B)\n"
         "D = relu(C)\n"
-        "return D\n";
+        "return 0\n";
 
     const ast::Program program =
         parse(source);
@@ -324,7 +324,7 @@ TEST(
 {
     constexpr std::string_view source =
         "X = 3.14\n"
-        "return X\n";
+        "return 0\n";
 
     const ast::Program program =
         parse(source);
@@ -365,9 +365,63 @@ TEST(SemanticAnalyzerTest, AcceptsFloatingPointArithmeticAndComparison)
     const ast::Program program = parse(
         "X = 3.0 / 2.0\n"
         "if X < 2.0 { Y = X + 1.0 } else { Y = X - 1.0 }\n"
-        "return Y");
+        "return 0");
     sema::SemanticAnalyzer analyzer;
     EXPECT_NO_THROW(analyzer.analyze(program));
+}
+
+TEST(SemanticAnalyzerTest, AcceptsIntegerProgramStatus)
+{
+    const ast::Program program = parse("return 42");
+    sema::SemanticAnalyzer analyzer;
+    EXPECT_NO_THROW(analyzer.analyze(program));
+}
+
+TEST(SemanticAnalyzerTest, RejectsFloatingPointProgramStatusWithLocation)
+{
+    const ast::Program program = parse("\nreturn 1.5");
+    sema::SemanticAnalyzer analyzer;
+
+    try {
+        analyzer.analyze(program);
+        FAIL() << "Expected semantic analysis to reject an f64 program status";
+    } catch (const sema::SemanticError& error) {
+        const std::string message = error.what();
+        EXPECT_NE(message.find("2:1"), std::string::npos);
+        EXPECT_NE(message.find("scalar i64"), std::string::npos);
+    }
+}
+
+TEST(SemanticAnalyzerTest, RejectsBooleanProgramStatus)
+{
+    const ast::Program program = parse("return 1 == 1");
+    sema::SemanticAnalyzer analyzer;
+    EXPECT_THROW(analyzer.analyze(program), sema::SemanticError);
+}
+
+TEST(SemanticAnalyzerTest, RejectsShapedProgramStatus)
+{
+    const ast::Program program = parse(
+        "tensor Result: f64[2,2]\nreturn Result");
+    sema::SemanticAnalyzer analyzer;
+    EXPECT_THROW(analyzer.analyze(program), sema::SemanticError);
+}
+
+TEST(SemanticAnalyzerTest, PreservesInconsistentReturnDiagnostic)
+{
+    const ast::Program program = parse(
+        "if 1 == 1 { return 1 } else { return 1.5 }");
+    sema::SemanticAnalyzer analyzer;
+
+    try {
+        analyzer.analyze(program);
+        FAIL() << "Expected inconsistent return types to be rejected";
+    } catch (const sema::SemanticError& error) {
+        EXPECT_NE(
+            std::string{error.what()}.find("return type mismatch"),
+            std::string::npos
+        );
+    }
 }
 
 TEST(SemanticAnalyzerTest, RejectsNonBooleanIfCondition)
@@ -392,4 +446,3 @@ TEST(SemanticAnalyzerTest, DoesNotExposeOneSidedBranchBinding)
     sema::SemanticAnalyzer analyzer;
     EXPECT_THROW(analyzer.analyze(program), sema::SemanticError);
 }
-

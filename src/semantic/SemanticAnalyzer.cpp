@@ -180,17 +180,17 @@ void SemanticAnalyzer::analyzeReturn(
     const ast::ReturnStmt& returnStatement
 )
 {
-    /*
-     * analyzeExpression() performs all semantic validation.
-     *
-     * The return type itself is not stored yet because functions
-     * are not part of the current language subset.
-     */
     const TensorType type = analyzeExpression(returnStatement.value);
     if (returnType_ &&
         (returnType_->elementType != type.elementType ||
          returnType_->shape != type.shape)) {
         throw SemanticError{"return type mismatch"};
+    }
+    if (type.elementType != "i64" || !type.shape.empty()) {
+        throw SemanticError{
+            makeLocationPrefix(returnStatement.location) +
+            "top-level return must have scalar i64 type"
+        };
     }
     returnType_ = type;
 }

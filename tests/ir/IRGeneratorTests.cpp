@@ -96,7 +96,7 @@ TEST(IRGeneratorTest, PreservesTensorOperationsInBlockIR)
 {
     const ir::Module module = generate(
         "tensor A: f32[2,2]\n"
-        "return A\n");
+        "return 0\n");
     ASSERT_EQ(module.blocks.size(), 1U);
     EXPECT_TRUE(std::holds_alternative<ir::TensorDeclOp>(
         module.blocks[0].operations[0]));

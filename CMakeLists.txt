@@ -373,6 +373,44 @@ if(BUILD_TESTING)
                 -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/codegen/NativeExecutionTest.cmake
         )
 
+        add_test(
+            NAME NativeExecution.Status42
+            COMMAND
+                ${CMAKE_COMMAND}
+                -DCOMPILER=$<TARGET_FILE:ocelotlc>
+                -DLINKER=${CMAKE_CXX_COMPILER}
+                -DSOURCE_VALUE=41
+                -DEXPECTED=42
+                -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/native-status-42
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/codegen/NativeExecutionTest.cmake
+        )
+
+        add_test(
+            NAME NativeExecution.StatusZero
+            COMMAND
+                ${CMAKE_COMMAND}
+                -DCOMPILER=$<TARGET_FILE:ocelotlc>
+                -DLINKER=${CMAKE_CXX_COMPILER}
+                -DSOURCE_VALUE=1
+                -DEXPECTED=0
+                -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/native-status-zero
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/codegen/NativeExecutionTest.cmake
+        )
+
+        # The Ocelotl value is i64 -1 and LLVM truncates it to i32 -1. POSIX
+        # process observation reports the low 8-bit status, 255.
+        add_test(
+            NAME NativeExecution.NegativeStatus
+            COMMAND
+                ${CMAKE_COMMAND}
+                -DCOMPILER=$<TARGET_FILE:ocelotlc>
+                -DLINKER=${CMAKE_CXX_COMPILER}
+                -DSOURCE_VALUE=0
+                -DEXPECTED=255
+                -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/native-status-negative
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/codegen/NativeExecutionTest.cmake
+        )
+
         foreach(OPT_LEVEL 0 1 2 3)
             add_test(
                 NAME NativeOptimization.O${OPT_LEVEL}
