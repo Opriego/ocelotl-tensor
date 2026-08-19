@@ -1,0 +1,3 @@
+usr/include/ocelotl/runtime/
+usr/lib/*/libocelotlrt.so
+usr/lib/*/libocelotlrt.a

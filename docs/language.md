@@ -4,7 +4,8 @@ Ocelotl is a small compiler language for exploring frontend, IR, and native
 backend engineering. Its scalar subset supports integer and floating-point
 literals, immutable-style assignments, arithmetic, comparisons, structured
 conditionals, and returns. Tensor syntax remains available, but tensor lowering
-is not yet implemented.
+is intentionally limited: declarations allocate compiler-managed storage using
+`libocelotlrt`, while tensor computations are not yet lowered.
 
 ## Scalar grammar
 
@@ -56,5 +57,7 @@ D = relu(C)
 return D
 ```
 
-Tensor operations are semantically checked and represented in Ocelotl IR, but
-the LLVM backend deliberately rejects them until tensor lowering is implemented.
+Tensor declarations lower to runtime-backed storage and are released before
+function return. Tensor operations are semantically checked and represented in
+Ocelotl IR, but the LLVM backend deliberately rejects them until their lowering
+is implemented.

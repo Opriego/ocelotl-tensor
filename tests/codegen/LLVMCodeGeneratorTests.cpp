@@ -135,6 +135,7 @@ TEST(
         ),
         std::string::npos
     );
+    EXPECT_EQ(llvmIR.find("ocelotl_rt_v1_"), std::string::npos);
 }
 
 TEST(
@@ -267,4 +268,25 @@ TEST(LLVMCodeGeneratorTest, LowersFloatingPointControlFlow)
     EXPECT_NE(output.find("fmul double"), std::string::npos);
     EXPECT_NE(output.find("fdiv double"), std::string::npos);
     EXPECT_NE(output.find("phi double"), std::string::npos);
+}
+
+TEST(LLVMCodeGeneratorTest, LowersTensorStorageToRuntimeABI)
+{
+    constexpr std::string_view source =
+        "tensor Scratch: f64[4,4]\n"
+        "return 7\n";
+    CompilationFixture fixture{source};
+    ir::IRGenerator irGenerator{fixture.semanticAnalyzer};
+    codegen::LLVMCodeGenerator generator;
+    const auto llvmModule = generator.generate(
+        irGenerator.generate(fixture.program));
+    const std::string output = generator.emitToString(*llvmModule);
+
+    EXPECT_NE(output.find("declare ptr @ocelotl_rt_v1_alloc(i64, i64)"),
+              std::string::npos);
+    EXPECT_NE(output.find("call ptr @ocelotl_rt_v1_alloc(i64 128, i64 64)"),
+              std::string::npos);
+    EXPECT_NE(output.find("call void @ocelotl_rt_v1_free(ptr"),
+              std::string::npos);
+    EXPECT_FALSE(llvm::verifyModule(*llvmModule, nullptr));
 }

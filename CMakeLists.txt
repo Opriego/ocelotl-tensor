@@ -9,9 +9,52 @@ project(
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
 
 include(CTest)
 include(GNUInstallDirs)
+
+#
+# Stable C runtime ABI. Both variants deliberately share the link name:
+# libocelotlrt.so for dynamic consumers and libocelotlrt.a for static ones.
+#
+
+add_library(ocelotlrt SHARED runtime/runtime.c)
+add_library(ocelotlrt_static STATIC runtime/runtime.c)
+
+foreach(RUNTIME_TARGET ocelotlrt ocelotlrt_static)
+    target_include_directories(
+        ${RUNTIME_TARGET}
+        PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    )
+    target_compile_options(
+        ${RUNTIME_TARGET}
+        PRIVATE -Wall -Wextra -Wpedantic
+    )
+    set_target_properties(
+        ${RUNTIME_TARGET}
+        PROPERTIES
+            C_VISIBILITY_PRESET hidden
+            VISIBILITY_INLINES_HIDDEN YES
+            OUTPUT_NAME ocelotlrt
+    )
+endforeach()
+
+target_compile_definitions(
+    ocelotlrt
+    PRIVATE OCELOTLRT_BUILDING OCELOTLRT_SHARED
+    INTERFACE OCELOTLRT_SHARED
+)
+set_target_properties(
+    ocelotlrt
+    PROPERTIES
+        VERSION 1.0.0
+        SOVERSION 1
+)
 
 #
 # LLVM
@@ -152,8 +195,15 @@ target_compile_options(
 #
 
 install(
-    TARGETS ocelotlc
+    TARGETS ocelotlc ocelotlrt ocelotlrt_static
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+install(
+    DIRECTORY include/ocelotl/runtime
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ocelotl
 )
 
 install(
@@ -191,12 +241,14 @@ if(BUILD_TESTING)
         tests/codegen/LLVMCodeGeneratorTests.cpp
         tests/codegen/LLVMOptimizerTests.cpp
         tests/codegen/TargetCodeGeneratorTests.cpp
+        tests/runtime/RuntimeTests.cpp
     )
 
     target_link_libraries(
         ocelotl_tests
         PRIVATE
             ocelotl_compiler
+            ocelotlrt_static
             ${LLVM_TEST_LIBS}
             GTest::gtest_main
     )
@@ -214,6 +266,31 @@ if(BUILD_TESTING)
     gtest_discover_tests(
         ocelotl_tests
     )
+
+    find_program(LLVM_NM_EXECUTABLE NAMES llvm-nm nm)
+    find_program(LLVM_READELF_EXECUTABLE NAMES llvm-readelf readelf)
+
+    if(UNIX AND LLVM_NM_EXECUTABLE AND LLVM_READELF_EXECUTABLE)
+        add_test(
+            NAME RuntimeABI.GeneratedCallsAndLinking
+            COMMAND
+                ${CMAKE_COMMAND}
+                -DCOMPILER=$<TARGET_FILE:ocelotlc>
+                -DLINKER=${CMAKE_CXX_COMPILER}
+                -DRUNTIME_SHARED=$<TARGET_FILE:ocelotlrt>
+                -DRUNTIME_STATIC=$<TARGET_FILE:ocelotlrt_static>
+                -DRUNTIME_DIR=$<TARGET_FILE_DIR:ocelotlrt>
+                -DNM=${LLVM_NM_EXECUTABLE}
+                -DREADELF=${LLVM_READELF_EXECUTABLE}
+                -DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/examples/runtime_allocation.oc
+                -DWORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/runtime-abi-test
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/runtime/RuntimeLinkTest.cmake
+        )
+    else()
+        message(STATUS
+            "nm/readelf not found or non-UNIX host: runtime ABI link test disabled"
+        )
+    endif()
 
     find_program(
         LLVM_READOBJ_EXECUTABLE

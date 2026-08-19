@@ -255,6 +255,7 @@ It currently lowers:
 * basic blocks and conditional/unconditional branches
 * Ocelotl SSA values and phi nodes
 * return terminators
+* tensor declarations to compiler-managed storage through `libocelotlrt`
 
 The generated module is checked with:
 
@@ -365,13 +366,29 @@ and requirements for cross-building the compiler itself.
 
 Tensor operations are represented by the frontend and Ocelotl IR, but LLVM lowering for:
 
-* tensor declarations
 * `matmul`
 * `relu`
 
 is not implemented yet.
 
 Tensor lowering is the next major compiler-backend milestone.
+
+### Runtime ABI
+
+Generated tensor declarations use the deliberately small `libocelotlrt` C ABI
+for aligned allocation and release. The compiler emits external calls, while
+the final system-linker step selects either `libocelotlrt.so.1` or
+`libocelotlrt.a`:
+
+```text
+source -> Ocelotl IR -> LLVM external call -> object -> linker
+       -> libocelotlrt -> executable
+```
+
+The runtime is separate from the compiler because it executes on the target
+platform as part of the generated program. Its versioned functions, ownership,
+alignment, diagnostics, visibility, and compatibility policy are documented in
+[Runtime ABI v1](docs/runtime-abi.md).
 
 ---
 
@@ -510,6 +527,9 @@ The GoogleTest suite covers multiple compiler layers, including:
 * invalid target diagnostics
 * pre-emission LLVM module verification diagnostics
 * unsupported backend operations
+* runtime allocation alignment and error diagnostics
+* compiler-generated runtime declarations and calls
+* shared/static runtime linking, SONAME dependency, and exported symbols
 
 LLVM code-generation tests exercise the full path:
 

@@ -1,6 +1,7 @@
 #include "ocelotl/codegen/llvm/LLVMCodeGenerator.hpp"
 
 #include "ocelotl/ir/IRVerifier.hpp"
+#include "ocelotl/runtime/v1/runtime.h"
 
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Function.h>
@@ -11,6 +12,8 @@
 #include <llvm/Support/raw_ostream.h>
 
 #include <cstdint>
+#include <limits>
+#include <optional>
 #include <stdexcept>
 #include <unordered_map>
 #include <variant>
@@ -27,6 +30,26 @@ llvm::Type* lowerType(llvm::LLVMContext& context, const sema::TensorType& type)
     return nullptr;
 }
 
+std::uint64_t tensorStorageSize(const sema::TensorType& type)
+{
+    const std::uint64_t elementSize =
+        type.elementType == "f32" ? 4U :
+        type.elementType == "f64" || type.elementType == "i64" ? 8U : 0U;
+    if (elementSize == 0 || type.shape.empty()) {
+        throw std::runtime_error{"unsupported tensor storage type"};
+    }
+
+    std::uint64_t size = elementSize;
+    for (const std::size_t dimension : type.shape) {
+        if (dimension == 0 ||
+            dimension > std::numeric_limits<std::uint64_t>::max() / size) {
+            throw std::runtime_error{"tensor storage size overflows runtime ABI"};
+        }
+        size *= static_cast<std::uint64_t>(dimension);
+    }
+    return size;
+}
+
 } // namespace
 
 LLVMCodeGenerator::LLVMCodeGenerator() = default;
@@ -38,10 +61,13 @@ std::unique_ptr<llvm::Module> LLVMCodeGenerator::generate(const ir::Module& modu
     auto llvmModule = std::make_unique<llvm::Module>("ocelotl_module", context_);
 
     const sema::TensorType* returnType = nullptr;
+    bool needsRuntime = false;
     std::unordered_map<ir::ValueId, const sema::TensorType*> valueTypes;
     for (const auto& block : module.blocks) {
         for (const auto& operation : block.operations) {
             valueTypes.emplace(ir::resultOf(operation), &ir::typeOf(operation));
+            needsRuntime = needsRuntime ||
+                std::holds_alternative<ir::TensorDeclOp>(operation);
         }
     }
     for (const auto& block : module.blocks) {
@@ -64,6 +90,23 @@ std::unique_ptr<llvm::Module> LLVMCodeGenerator::generate(const ir::Module& modu
         llvmModule.get()
     );
 
+    auto* pointerType = llvm::PointerType::getUnqual(context_);
+    std::optional<llvm::FunctionCallee> allocate;
+    std::optional<llvm::FunctionCallee> release;
+    if (needsRuntime) {
+        allocate = llvmModule->getOrInsertFunction(
+            OCELOTL_RT_V1_ALLOC_NAME,
+            llvm::FunctionType::get(
+                pointerType,
+                {llvm::Type::getInt64Ty(context_),
+                 llvm::Type::getInt64Ty(context_)},
+                false));
+        release = llvmModule->getOrInsertFunction(
+            OCELOTL_RT_V1_FREE_NAME,
+            llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context_), {pointerType}, false));
+    }
+
     std::unordered_map<ir::BlockId, llvm::BasicBlock*> blocks;
     for (const auto& block : module.blocks) {
         blocks.emplace(
@@ -74,6 +117,19 @@ std::unique_ptr<llvm::Module> LLVMCodeGenerator::generate(const ir::Module& modu
 
     llvm::IRBuilder<llvm::NoFolder> builder{context_};
     std::unordered_map<ir::ValueId, llvm::Value*> values;
+    std::unordered_map<ir::ValueId, llvm::AllocaInst*> cleanupSlots;
+
+    builder.SetInsertPoint(blocks.at(module.entry));
+    for (const auto& block : module.blocks) {
+        for (const auto& operation : block.operations) {
+            if (const auto* tensor = std::get_if<ir::TensorDeclOp>(&operation)) {
+                auto* slot = builder.CreateAlloca(pointerType, nullptr,
+                                                  tensor->name + ".cleanup");
+                builder.CreateStore(llvm::ConstantPointerNull::get(pointerType), slot);
+                cleanupSlots.emplace(tensor->result, slot);
+            }
+        }
+    }
 
     for (const auto& block : module.blocks) {
         builder.SetInsertPoint(blocks.at(block.id));
@@ -81,7 +137,16 @@ std::unique_ptr<llvm::Module> LLVMCodeGenerator::generate(const ir::Module& modu
         for (const auto& operation : block.operations) {
             std::visit([&](const auto& op) {
                 using Op = std::decay_t<decltype(op)>;
-                if constexpr (std::is_same_v<Op, ir::ConstantIntOp>) {
+                if constexpr (std::is_same_v<Op, ir::TensorDeclOp>) {
+                    llvm::Value* storage = builder.CreateCall(
+                        *allocate,
+                        {llvm::ConstantInt::get(llvm::Type::getInt64Ty(context_),
+                                                tensorStorageSize(op.type)),
+                         llvm::ConstantInt::get(llvm::Type::getInt64Ty(context_), 64)},
+                        op.name + ".storage");
+                    builder.CreateStore(storage, cleanupSlots.at(op.result));
+                    values.emplace(op.result, storage);
+                } else if constexpr (std::is_same_v<Op, ir::ConstantIntOp>) {
                     values.emplace(op.result, llvm::ConstantInt::get(
                         llvm::Type::getInt64Ty(context_),
                         static_cast<std::uint64_t>(op.value), true));
@@ -165,6 +230,11 @@ std::unique_ptr<llvm::Module> LLVMCodeGenerator::generate(const ir::Module& modu
                                      blocks.at(terminator.trueTarget),
                                      blocks.at(terminator.falseTarget));
             } else {
+                for (const auto& [value, slot] : cleanupSlots) {
+                    (void)value;
+                    builder.CreateCall(*release,
+                                       {builder.CreateLoad(pointerType, slot)});
+                }
                 builder.CreateRet(values.at(terminator.value));
             }
         }, *block.terminator);
