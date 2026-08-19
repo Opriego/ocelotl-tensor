@@ -2,7 +2,7 @@
 
 Ocelotl is an experimental compiler written in modern C++20 for exploring end-to-end compiler engineering, from source-language analysis to native object generation.
 
-The project currently implements a compiler frontend, semantic analysis, a custom SSA-inspired intermediate representation, an LLVM backend for scalar programs, automated testing, CI across GCC and Clang, and Debian packaging.
+The project currently implements a compiler frontend, semantic analysis, a custom SSA-inspired intermediate representation, an LLVM backend for scalar programs, a small generated-program runtime, automated testing, CI across GCC and Clang, and Debian packaging metadata.
 
 The longer-term goal is to evolve Ocelotl into a tensor-oriented compiler capable of progressively lowering tensor operations toward CPU and GPU execution.
 
@@ -584,10 +584,12 @@ debian/ocelotlc.manpages
 debian/source/
 ```
 
-The binary package is named:
+The binary packages are named:
 
 ```text
 ocelotlc
+libocelotlrt1
+libocelotlrt-dev
 ```
 
 and uses the standard Debian CMake/Ninja build integration through `debhelper`.
@@ -598,7 +600,8 @@ A package can be built using standard Debian tooling, for example:
 dpkg-buildpackage -us -uc -b
 ```
 
-The package installs the compiler executable and its manual page.
+The packages install the compiler and manual page, the versioned shared
+runtime, and the runtime development header/static library.
 
 ---
 
@@ -618,7 +621,9 @@ The package installs the compiler executable and its manual page.
 │       ├── codegen/
 │       ├── frontend/
 │       ├── ir/
+│       ├── runtime/
 │       └── semantic/
+├── runtime/
 ├── src/
 │   ├── codegen/
 │   │   └── llvm/
@@ -631,6 +636,7 @@ The package installs the compiler executable and its manual page.
     ├── codegen/
     ├── frontend/
     ├── ir/
+    ├── runtime/
     └── semantic/
 ```
 
@@ -663,20 +669,13 @@ The project focuses on:
 
 ### Near term
 
-* expand scalar LLVM lowering
-* add arithmetic operations
-* improve LLVM type lowering
-* introduce control-flow representation
-* implement basic blocks
-* introduce PHI nodes where required
 * extend compiler diagnostics
 * expand LLVM backend tests
 * add sanitizer CI configurations
 
 ### Tensor lowering
 
-* define a concrete tensor memory representation
-* lower tensor declarations
+* define a concrete tensor descriptor and data representation beyond storage
 * lower element-wise operations
 * lower `relu`
 * lower matrix multiplication
@@ -685,16 +684,11 @@ The project focuses on:
 
 ### Optimization
 
-* constant folding
-* dead-code elimination
-* algebraic simplification
 * data-flow analysis
 * Ocelotl IR optimization passes
-* LLVM optimization-pipeline integration
 
 ### Longer term
 
-* native object generation
 * CPU-oriented tensor optimizations
 * SIMD/vector lowering
 * GPU-oriented lowering
